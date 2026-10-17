@@ -26,7 +26,7 @@ function msg(t){S.msg={t,l:3.5}}
 function go(cb){fade.d=1;fade.cb=cb}
 // ENTITIES
 class Pl{constructor(x){this.x=x;this.y=G-44;this.w=24;this.h=44;this.vx=this.vy=0;this.face=1;this.g=1;this.co=this.bf=this.cd=this.inv=this.an=0;this.hp=maxHp()}
-up(dt){const a=K.r-K.l;this.vx=a*CFG.run+(this.sa>0?this.face*110*M.pow(this.sa/SW_ANIM,2):0);if(a)this.face=a;this.an+=dt*(a?1:.2);this.cd-=dt;this.inv-=dt;this.co-=dt;this.bf-=dt;
+up(dt){const a=K.r-K.l;this.vx=a*CFG.run+(this.sa>0?this.face*110*M.pow(this.sa/SW_ANIM,2):0);if(a)this.face=a;this.an+=dt*(a?1:.2);{const sp=(this.an*12/M.PI)|0;if(!a||!this.g)this.ls=sp;else if(sp!==this.ls){this.ls=sp;SFX.step()}}this.cd-=dt;this.inv-=dt;this.co-=dt;this.bf-=dt;
 if(K.jp){this.bf=CFG.buf;K.jp=0}if(this.g)this.co=CFG.coyote;
 if(this.bf>0&&this.co>0){this.vy=-CFG.jump;this.bf=0;this.co=0;this.g=0;SFX.jump()}
 if(!K.j&&this.vy<-300)this.vy=-300;if(K.f&&this.cd<=0)fire();this.sw=(this.sw||0)-dt;this.sa=(this.sa||0)-dt;swq-=dt;if((K.s||swq>0)&&this.sw<=0){swq=0;swing()}if(this.sa>SW_END&&this.sa<SW_START)swHit();
@@ -138,12 +138,12 @@ if(!(S.boss&&S.boss.dead)){(lv.F||[]).forEach(f=>{const p=(S.t+f[2])%f[1];if(p<f
 if(S.boss)S.boss.up(dt);npcUp();if(!S.used.s&&S.mins.some(m=>M.abs(m.x-P.x-12)<110&&M.abs(m.y-P.y-44)<70)){S.used.s=1;msg('A shadow is close! Press F, Shift or click (or tap the sword button) to swing your sword.')}
 S.bolts.forEach(b=>{b.x+=b.vx*dt;if(ov(P,{x:b.x-17,y:b.y-8,w:34,h:16})){hurt();b.x=-999}if(R()<.5)em(b.x,b.y,1,'#8a4cff',20,.5,0,3)});S.bolts=S.bolts.filter(b=>b.x>S.cam-60&&b.x<S.cam+W+60);
 if(lv.sh&&!sh[L]&&M.hypot(P.x+12-lv.sh[0],P.y+20-lv.sh[1])<30){sh[L]=1;SFX.shard();FX.flash=.3;FX.fc='120,240,255';em(lv.sh[0],lv.sh[1],40,'#7af0ff',200,1,0,3);msg('Ember shard found! ('+sh.filter(x=>x).length+'/3)')}
-lv.cp.forEach(c=>{if(P.x>c&&c>S.cx&&P.g){S.cx=c;S.ctl=S.tl;em(c,G-30,22,'#7af0ff',130,.9,-50,2.5);SFX.check();{const w=NW[(L*3+lv.cp.indexOf(c))%NW.length];msg(w);voSay(w)}}});
+lv.cp.forEach(c=>{if(P.x>c&&c>S.cx&&P.g){S.cx=c;S.ctl=S.tl;em(c,G-30,22,'#7af0ff',130,.9,-50,2.5);SFX.check();{const w=NW[(L*3+lv.cp.indexOf(c))%NW.length];msg(w)}}});
 (lv.tr||[]).forEach(t=>{if(P.x<t[0])return;if(t[1]=='boss'&&!S.used.b&&state=='PLAYING'){S.used.b=1;S.boss=new Valdrik();S.bar={x:lv.ao,y:0,w:20,h:440,k:'gate',need:null,dead:0};S.blocks.push(S.bar);if(!easy)S.tl=M.max(S.tl,90)+(villageSaved?0:30);if(villageSaved){P.hp=maxHp();msg('The villagers come with lanterns!')}else msg('Valdrik awaits in the dark...')}if(t[1]=='hurdle'&&!S.used.h){S.used.h=1;S.cx=t[0];S.ctl=S.tl;state='CHOICE'}if(t[1]=='riddle'&&!S.riddle&&state=='PLAYING'){ri=[0,1,2].sort(()=>R()-.5);rw=[];state='RIDDLE'}});
 const g=lv.goal;if(g&&M.abs(P.x+12-g.x)<30&&(g.need==null||S.torches[g.need].lit)&&!S.end){S.end=1;SFX.win();go(()=>{L==0?cine('elder',()=>startStory(1)):startStory(L+1)})}
 else if(g&&g.need!=null&&!S.torches[g.need].lit&&M.abs(P.x-g.x)<60&&!S.msg)msg('The map is hidden. Light the torch with fire!')}
-let st=[0];function sayStory(i){voSay(lv.story[i]||'')}
-function startStory(i){load(i);state='STORY';si=0;ptc=[];st=[0];sayStory(0)}
+let st=[0];
+function startStory(i){load(i);state='STORY';si=0;ptc=[];st=[0]}
 function choose(sv){villageSaved=sv;S.hu=1;S.torches.forEach(t=>{if((t.tag=='g'&&sv)||(t.tag=='l'&&!sv))t.lock=1});S.ch=CFG.hurdleCharges;if(sv){S.altOn=1;if(!easy)S.tl=M.max(S.tl-CFG.detour,8)}msg(sv?'Light the 3 lanterns!':'Light the 3 gate torches!');state='PLAYING'}
 function answer(k){if(state!='RIDDLE'||rw.includes(k))return;if(k==0){S.riddle=1;state='PLAYING';msg('Correct! Time has hands, but cannot clap.')}else{rw.push(k);shake=10;if(!easy)S.tl=M.max(S.tl-CFG.wrong,3);msg('Wrong! -10 seconds of pendant time')}}
 // UI BUTTONS (data) shared by draw and click
@@ -154,7 +154,7 @@ if(state=='ENDING')return[b(380,440,200,50,'Play again',()=>go(()=>{state='TITLE
 if(state=='CHOICE')return[b(60,250,400,170,'A: RUSH ON',()=>choose(false),['Spend 3 flames on the gate torches.','Gate opens. The village falls into','permanent darkness. No time lost,','fewer light for the final fight.']),b(500,250,400,170,'B: SAVE THE VILLAGE',()=>choose(true),['Spend 3 flames on the lanterns.','Villagers saved. The gate stays shut:','a long detour costs ~40s of pendant','time. Allies will light the last fight.'])];
 if(state=='RIDDLE')return ri.map((k,i)=>b(280,250+i*70,400,54,(i+1)+'.  '+['A clock','A king','A tower'][k],()=>answer(k),rw.includes(k)?1:0));return[]}
 function click(x,y){const r=cv.getBoundingClientRect(),X=(x-r.left)*W/r.width,Y=(y-r.top)*H/r.height;for(const b of btns())if(X>b.x&&X<b.x+b.w&&Y>b.y&&Y<b.y+b.h){SFX.ui();return b.f()}if(state=='STORY')nextLine()}
-function nextLine(){if(si<lv.story.length&&S.t-(st[si]||0)<lv.story[si].length/cps()){st[si]=-99;return}if(++si>=lv.story.length+1){noorStop();go(()=>{state='PLAYING';ptc=[]})}else{st[si]=S.t;sayStory(si)}}
+function nextLine(){if(si<lv.story.length&&S.t-(st[si]||0)<lv.story[si].length/cps()){st[si]=-99;return}if(++si>=lv.story.length+1){go(()=>{state='PLAYING';ptc=[]})}else{st[si]=S.t}}
 function cont(){if(state=='TITLE')go(()=>cine('prologue',()=>startStory(0)));else if(state=='STORY')nextLine();else if(state=='DEAD')respawn(1);else if(state=='PAUSED')state='PLAYING'}
 // RENDER
 function t_(s,x,y,sz,c,al,f){ctx.font=(f||'')+' '+sz+'px Georgia,serif';ctx.fillStyle=c;ctx.textAlign=al||'center';ctx.fillText(s,x,y)}
@@ -228,7 +228,7 @@ ctx.save();const sk=RM?.2:1;ctx.translate(shake?(R()-.5)*shake*sk:0,shake?(R()-.
 if(state=='TITLE'||state=='STORY'||state=='ENDING'){ctx.restore();ctx.globalCompositeOperation='lighter';ptc.forEach(p=>{ctx.globalAlpha=M.max(0,p.l/p.m);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,6.3);ctx.fill()});ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
 else if(lv.sky){skDraw();ctx.restore()}else{world();ctx.restore();fog();dark()}ctx.restore();
 if(state=='PLAYING'||state=='DEAD'||state=='CHOICE'||state=='RIDDLE')hud();
-if(state=='TITLE'){panel('Ashes of the Last Hour','Shams chases the Shadow King. Noor\'s pendant is fading.');btns().forEach(button);rehan(210,470,1,S.t,{});noorA(750,470,-1,S.t,{glow:1});gl(480,440,40+8*M.sin(S.t*3),'255,190,90',.6);t_('Enter / Space: begin   |   Arrows or WASD + Space,  J: fire   F / Click / Shift: sword   |   M: music   V: voice-over   P: pause',W/2,H-24,14,'#9a8ab8');P=P||new Pl(0)}
+if(state=='TITLE'){panel('Ashes of the Last Hour','Shams chases the Shadow King. Noor\'s pendant is fading.');btns().forEach(button);rehan(210,470,1,S.t,{});noorA(750,470,-1,S.t,{glow:1});gl(480,440,40+8*M.sin(S.t*3),'255,190,90',.6);t_('Enter / Space: begin   |   Arrows or WASD + Space,  J: fire   F / Click / Shift: sword   |   M: music   P: pause',W/2,H-24,14,'#9a8ab8');P=P||new Pl(0)}
 if(state=='STORY')storyUI();
 if(state=='CHOICE'){panel('The Lantern Keeper\'s Choice','Emberfall: shadows swallowed the lanterns. You have exactly 3 flames and no brazier.');btns().forEach(button)}
 if(state=='RIDDLE'){panel('The Gate Speaks','"I have hands but cannot clap."  (wrong answer: -10s)   Click or press 1 / 2 / 3');btns().forEach(button)}
@@ -241,7 +241,7 @@ t_('Ember shards: '+sh.filter(x=>x).length+'/3'+(sh.every(x=>x)?'':'   (find all
 const v=ctx.createRadialGradient(W/2,H/2,H*.4,W/2,H/2,H*.9);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.55)');ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
 if(fade.a>0){ctx.fillStyle=`rgba(0,0,0,${fade.a})`;ctx.fillRect(0,0,W,H)}
 if(FX.flash>0){ctx.fillStyle=`rgba(${FX.fc},${M.min(.8,FX.flash)})`;ctx.fillRect(0,0,W,H)}
-if(VO.t>0&&state=='PLAYING')gl(915,34,46+6*M.sin(S.t*8),VO.who=='noor'?'120,240,255':'255,200,120',.35);
+
 if(state=='PLAYING'&&!lv.sky){if(P.inv>CFG.inv-.3){ctx.fillStyle=`rgba(255,40,30,${(P.inv-(CFG.inv-.3))*1.2})`;ctx.fillRect(0,0,W,H)}if(!easy&&pend()<.2){ctx.fillStyle=`rgba(120,0,20,${(.2-pend())*(.7+.3*M.sin(S.t*6))*1.5})`;ctx.fillRect(0,0,W,H)}}}
 // INPUT
 const km={ArrowLeft:'l',KeyA:'l',ArrowRight:'r',KeyD:'r',ArrowUp:'j',KeyW:'j',Space:'j',KeyJ:'f',KeyK:'s',KeyX:'s',KeyF:'s',ShiftLeft:'s',ShiftRight:'s'};
@@ -270,8 +270,10 @@ if(s=='TITLE')return .45;if(s=='STORY')return .28;if(s=='ENDING')return .62;if(s
 if(s=='CINE'){const t=c.t;if(c.id=='prologue')return t>9&&t<16.5?.06:.4;if(c.id=='elder')return .3;if(c.id=='burn')return .5+.3*E(0,8,t);return .5+.45*E(12,18,t)}
 if(lv.boss)return S.lit>0?.32:.1;
 let v=.22;if(S.zones.some(z=>z.on&&P.x>z.x&&P.x<z.x+z.w))v=.11;if(near(P.x+12))v+=.1;return v*(.55+.45*pend())}
-function musUp(dt){VO.t=M.max(0,VO.t-dt);VO.dk+=((VO.t>0?1:0)-VO.dk)*M.min(1,dt*6);const e=MU.el;if(!e||!MU.on)return;let tv=musTarget()*(1-(state=='CINE'&&S.cine.id=='reunion'?.3:.62)*VO.dk),rate=1;
-if(state=='PLAYING'&&!easy&&pend()<.33)rate=.82+.18*pend()/.33;if(state=='DEAD')rate=.8;
+// story progress 0..1 (start of game -> final fight / reunion); drives tempo + loudness of the song
+function prog(){if(state=='ENDING'||(state=='CINE'&&S.cine&&S.cine.id=='reunion'))return 1;if(state=='CINE'&&S.cine&&S.cine.id=='burn')return .85;if(state=='TITLE')return 0;const f=lv.sky?cl(SK.kills/(SK.total||9),0,1):cl((P?P.x:0)/lv.w,0,1);return cl((L+f)/4,0,1)}
+function musUp(dt){ambUp(dt);const e=MU.el;if(!e||!MU.on)return;const pg=prog(),pk=pg*pg*(3-2*pg);let tv=musTarget()*(.7+.45*pk),rate=.86+.18*pk;
+if(state=='PLAYING'&&!easy&&pend()<.33)rate*=.82+.18*pend()/.33;if(state=='DEAD')rate=.8;
 if(MU.seek!=null){tv=0;if(MU.v<.03){try{e.currentTime=MU.seek}catch(x){}MU.seek=null;if(e.paused)e.play().catch(()=>{})}}
 else if(state=='ENDING'||(state=='CINE'&&S.cine.id=='reunion')){if(e.ended||e.currentTime>191)MU.seek=RC+22}else if(e.currentTime>194)MU.seek=10;
 MU.v+=(tv-MU.v)*M.min(1,dt*(tv<MU.v?4:1.5));MU.rate+=(rate-MU.rate)*dt*2;e.volume=cl(MU.v,0,1);e.playbackRate=cl(MU.rate,.5,2)}
@@ -293,22 +295,28 @@ bossHit:()=>{tn(110,.6,{t:'sawtooth',v:.2,s:40,w:1});nz(.5,{f:2500,s:300,v:.2,w:
 roar:()=>{tn(70,1.6,{t:'sawtooth',v:.22,s:40,w:1});tn(75,1.6,{t:'square',v:.1,s:45,w:1});nz(1.4,{f:300,s:120,v:.15,w:1})},bolt:()=>tn(500,.35,{t:'sawtooth',v:.08,s:150,w:1}),charge:()=>tn(80,.9,{t:'sawtooth',v:.12,s:260,a:.8,w:1}),
 slam:()=>{tn(60,.5,{v:.4,s:30});nz(.5,{f:400,s:80,v:.25,ft:'lowpass'})},spear:()=>nz(.25,{f:4000,s:1200,v:.12}),clink:()=>{tn(1800,.2,{t:'triangle',v:.07,w:1});tn(2700,.15,{v:.04,w:1})},tele:()=>nz(.4,{f:3000,s:300,v:.12,w:1}),thunder:()=>nz(1.5,{f:200,s:60,v:.3,w:1,ft:'lowpass'}),
 nar:()=>{tn(55,2,{t:'sawtooth',v:.07,s:38,a:.5,w:1});nz(1.1,{f:200,s:2500,v:.07,w:1})},chime:()=>[1319,1760,2093].forEach((f,i)=>tn(f,1.4,{v:.045,at:i*.12,w:1}))};
+SFX.step=()=>{const th=lv.th,v=.8+R()*.4;if(th==0)nz(.07,{f:900*v,s:350,v:.05,ft:'bandpass',q:.7});else if(th==1)nz(.08,{f:2000*v,s:700,v:.045,q:.6});else{nz(.05,{f:2500*v,v:.035,ft:'highpass'});tn(120*v,.07,{v:.05,s:70,w:1})}};
+// ===== ENVIRONMENT AUDIO: looping ambience per area + random one-shots (all synthesised) =====
+const AM={ok:0,ev:2,t:0,L:{}};
+function amInit(){if(AM.ok||!AU.c)return;try{const c=AU.c,n=c.sampleRate*4|0,K=4000,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);let l=0;for(let i=0;i<n;i++){l=(l+.02*(R()*2-1))/1.02;d[i]=l*3.2+(R()*2-1)*.12}
+for(let i=0;i<K;i++){const w=i/K;d[i]=d[i]*w+d[n-K+i]*(1-w)}
+const mk=(type,f,q)=>{const s=c.createBufferSource();s.buffer=b;s.loop=true;s.loopEnd=(n-K)/c.sampleRate;s.playbackRate.value=.8+R()*.4;const fl=c.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=c.createGain();g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(AU.m);s.start();return g};
+AM.L.wind=mk('bandpass',450,.8);AM.L.leaf=mk('highpass',2500,.4);AM.L.fire=mk('bandpass',900,.6);AM.L.rum=mk('lowpass',140,.6);
+const dr=c.createGain();dr.gain.value=0;dr.connect(AU.m);[55,55.7,82.4].forEach(f=>{const o=c.createOscillator();o.type='sine';o.frequency.value=f;const og=c.createGain();og.gain.value=.03;o.connect(og);og.connect(dr);o.start()});AM.L.drone=dr;AM.ok=1}catch(e){AM.ok=0;AM.bad=1}}
+function ambEvent(){const th=lv.th,sk=lv.sky,bo=lv.boss;
+if(th==0){for(let k=0;k<2+(R()*4|0);k++)nz(.03,{f:2500+R()*2500,v:.05,ft:'highpass',at:R()*.6});if(R()<.12)nz(.6,{f:320,s:90,v:.08,ft:'lowpass',w:1});AM.ev=.5+R()*1.1}
+else if(th==1){const r=R();if(r<.3){tn(420,.5,{v:.04,s:340,w:1});tn(420,.5,{v:.04,s:340,at:.7,w:1})}else if(r<.7){for(let k=0;k<4;k++)tn(4300,.05,{v:.015,at:k*.09})}else nz(.05,{f:3000,v:.06,ft:'highpass'});AM.ev=2+R()*3}
+else if(sk){if(R()<.35)nz(1.8,{f:180,s:50,v:.14,ft:'lowpass',w:1});else nz(1.8,{f:300,s:1200,v:.07});AM.ev=3+R()*4}
+else{if(bo&&S.boss&&!S.boss.dead){tn(55,.4,{v:.12,s:40});AM.ev=.9}else{if(R()<.65){const f=1500+R()*600;tn(f,.12,{v:.03,s:f*.5,w:1});tn(f*.8,.1,{v:.015,s:f*.4,at:.22,w:1})}else tn(120,1,{t:'sawtooth',v:.015,s:90,a:.4,w:1});AM.ev=1.5+R()*2.5}}}
+function ambUp(dt){if(!AU.c||AM.bad)return;amInit();if(!AM.ok)return;AM.t+=dt;const c=AU.c,t=c.currentTime,th=lv.th,sk=lv.sky,bo=lv.boss,end=state=='ENDING'||(state=='CINE'&&S.cine&&S.cine.id=='reunion');
+let sc=state=='PLAYING'?1:(state=='STORY'||state=='TITLE')?.5:state=='CINE'?.45:state=='ENDING'?.25:state=='DEAD'?.08:.25;if(MU.mute)sc=0;
+let w=0,lf=0,fi=0,ru=0,dr=0;
+if(end){w=.3;lf=.2}else if(th==0){w=.8;fi=.9+(state=='PLAYING'&&P&&near(P.x+12)?.5:0);ru=.2;dr=.2}else if(th==1){w=.55;lf=.9;ru=.3;dr=.5}else if(sk){w=1.5;ru=.5;dr=.2}else{w=.35;ru=.5+(bo?.4:0);dr=1;fi=.25}
+w*=.75+.25*M.sin(AM.t*.35)+.1*M.sin(AM.t*.9);
+const o={wind:w,leaf:lf,fire:fi,rum:ru,drone:dr*.05};for(const k in o)AM.L[k].gain.setTargetAtTime(o[k]*sc,t,.8);
+if(state=='PLAYING'){AM.ev-=dt;if(AM.ev<=0)ambEvent()}}
 const FX={flash:0,fc:'255,255,255',stop:0,slow:1,rings:[]};
-// ===== VOICE-OVER: deep trailer-style narrator + Noor / Shams / Mira (browser speech engine; V toggles) =====
-const VO={on:1,dk:0,t:0,who:'',f:null,m:null},VQ={q:[],k:0},hasTTS=typeof speechSynthesis!='undefined'&&typeof SpeechSynthesisUtterance!='undefined';
-function pickVoice(){if(!hasTTS)return;const en=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)),fe=/female|samantha|zira|aria|jenny|susan|hazel|karen|moira|tessa|victoria|serena|natural|libby|sonia|emma|ava/i,ma=/google uk english male|daniel|george|arthur|david|alex|fred|mark|guy|ryan|james|thomas|oliver|ralph|eric|brian|\bmale\b/i;
-VO.m=en.find(v=>ma.test(v.name)&&!/female/i.test(v.name))||null;VO.f=en.find(v=>fe.test(v.name))||en.find(v=>v!==VO.m)||en[0]||null}
-if(hasTTS){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
-const PRO={nar:{p:.55,r:.82,v:1,z:1.5},noor:{p:1.3,r:.84,v:.85,z:1.1},shams:{p:.78,r:.92,v:1,z:1},mira:{p:.95,r:.8,v:.9,z:1.2}},cps=()=>VO.on&&hasTTS?15:42;
-function phr(t){const o=[];(t.match(/[^.!?…,;:—]+(?:\.{3}|[.!?…,;:—])*/g)||[t]).forEach(x=>{x=x.trim();if(!x)return;const e=x.slice(-1);o.push({t:x,pz:/\.\.\.|…/.test(x.slice(-3))?800:/[.!?]/.test(e)?500:/[;:—]/.test(e)?320:200})});return o}
-function parseVO(x){const o=[];let m,re=/(Noor|Shams|Mira): "([^"]*)"/g;while(m=re.exec(x))o.push({w:m[1].toLowerCase(),t:m[2]});if(o.length)return o;if(m=x.match(/^Noor: '(.*)'\s*$/))return[{w:'noor',t:m[1]}];if(m=x.match(/^(.*): '([^']+)'$/))return[{w:'nar',t:m[1]+'.'},{w:'noor',t:m[2]}];return[{w:'nar',t:x}]}
-function vstop(){VQ.k++;VQ.q=[];VO.t=0;if(hasTTS)try{speechSynthesis.cancel()}catch(e){}}
-function noorStop(){vstop()}
-function voSay(x){if(!x)return;vstop();const ps=parseVO(x),k=++VQ.k;ps.forEach(p=>{const ph=phr(p.t);ph.forEach((q,i)=>VQ.q.push({w:p.w,t:q.t,pz:q.pz*PRO[p.w].z,i,n:ph.length}))});
-VO.t=.8+VQ.q.reduce((a,q)=>a+q.t.length*.08/PRO[q.w].r+q.pz/1000,0);VO.who=ps[0].w;if(!VO.on)return;ps[0].w=='noor'?SFX.chime():SFX.nar();if(hasTTS)vnext(k)}
-function vnext(k){if(k!==VQ.k)return;const q=VQ.q.shift();if(!q)return;VO.who=q.w;let fin=0;const nx=()=>{if(fin)return;fin=1;setTimeout(()=>vnext(k),q.pz)};
-try{const o=PRO[q.w],u=new SpeechSynthesisUtterance(q.t),last=q.i==q.n-1,v=q.w=='noor'||q.w=='mira'?VO.f:VO.m;if(v){u.voice=v;u.lang=v.lang}else u.lang='en-US';u.pitch=cl(o.p-(last&&q.w=='nar'?.08:0),.1,2);u.rate=o.r*(last?.92:1);u.volume=cl(o.v*(.8+.2*(q.i+1)/q.n),0,1);u.onend=nx;u.onerror=nx;speechSynthesis.speak(u);setTimeout(nx,q.t.length*130+2500)}catch(e){nx()}}
-addEventListener('keydown',e=>{if(e.code=='KeyV'){VO.on^=1;if(!VO.on)vstop();msg('Voice-over '+(VO.on?'on':'off'))}});
+const cps=()=>42; // caption reading speed (chars/sec)
 const RC=34;
 // ===== NPCs and whispers =====
 const NW=["Noor: 'The ember is warm... I am still here.'","Noor: 'Don't look back, Shams.'","Noor: 'Fire is light, not rage.'","Noor: 'I hear your hammer in my heart.'","Noor: 'Choose kindly, my love.'","Noor: 'Almost there. Keep burning.'"];
@@ -363,8 +371,8 @@ const CN={prologue:{d:21,s:sPro,cap:()=>[[.5,4.5,"Night at the forge. Shams hamm
 elder:{d:13,s:sEld,cap:()=>[[.5,3,"Beyond the Ash Road, an old lantern-keeper waits."],[3.5,7,"Mira: \"The forest drinks light, blacksmith. Feed the torches.\""],[7.5,10.5,"Mira: \"And when you must choose, remember: lanterns are lives.\""],[11,12.8,"Shams nods and walks into the dark."]]},
 burn:{d:11,s:sBurn,cap:()=>ending=='secret'?[[.5,4,"Qaher falls. Noor's light stirs in the embers."],[4.5,8,"Her light and Shams's fire burn the curse away. Qaher is free."],[8.5,10.8,"The castle of shadows burns to ash."]]:[[.5,4,"Qaher falls. His shadow breaks apart like ash."],[4.5,8,"The castle's dark halls collapse into flame."],[8.5,10.8,"The Shadow King's castle burns."]]},
 reunion:{d:29,s:sRe,cap:()=>[[3,7,"Out of the smoke... a light he knows by heart."],[8,11.5,"Shams: \"Noor?!\""],[12,15.5,"The ember pendant blazes gold."],[16,21,"Noor: \"You never stopped.\"   Shams: \"I never could.\""],[21.5,28.5,ending=='secret'?"Dawn rises for them both, and for a king set free.":"Dawn rises over the ashes. The Flame burns again."]]}};
-function cine(id,next){S.tl=S.tl||100;S.max=S.max||150;S.cine={id:id,t:0,next:next,h:[],done:0,ts:VO.on&&hasTTS?1/1.3:1};state='CINE';ptc=[];if(id=='prologue')musCue(0);if(id=='burn')musCue(165);if(id=='reunion')musCue(RC)}
-function cineUp(dt){const c=S.cine,t=c.t+=dt*c.ts;const cp0=CN[c.id].cap().find(q=>t>=q[0]&&t<=q[1]);if(cp0&&c.sp!==cp0[2]){c.sp=cp0[2];voSay(cp0[2])}
+function cine(id,next){S.tl=S.tl||100;S.max=S.max||150;S.cine={id:id,t:0,next:next,h:[],done:0,ts:1};state='CINE';ptc=[];if(id=='prologue')musCue(0);if(id=='burn')musCue(165);if(id=='reunion')musCue(RC)}
+function cineUp(dt){const c=S.cine,t=c.t+=dt*c.ts;const cp0=CN[c.id].cap().find(q=>t>=q[0]&&t<=q[1]);if(cp0&&c.sp!==cp0[2])c.sp=cp0[2];
 if(c.id=='prologue'){if(t<5&&M.sin(t*8)>.9&&R()<.5)em(330,415,6,'#ffd27a',150,.5,300,2);if(t>9&&t<16.5&&R()<.7)em(800+R()*40-20,400,1,'#8a4cff',60,1,-60,3);if(t>=16&&!c.b){c.b=1;em(780,300,60,'#b070ff',260,1.2,-40,4)}}
 if(c.id=='burn'){if(R()<.7)em(500+R()*420,300+R()*100,1,'#ff9a2a',30,2.5,-70,2.5);if(R()<.3)em(R()*W,H,1,'#ffb347',20,4,-60,2);if(t>2&&t<8&&R()<.8)em(560,420,2,ending=='secret'?'#ffe27a':'#999',50,1.5,ending=='secret'?-70:-25,2.5)}
 if(c.id=='reunion'){if(R()<.2)em(120+R()*60,360,1,'#ff9a2a',20,3,-50,2);if(t>15.5&&t<27&&(c.hs=(c.hs||0)+dt)>.3){c.hs=0;c.h.push({x:500+(R()-.5)*50,y:400,l:3.5,vx:(R()-.5)*30})}}
@@ -373,11 +381,11 @@ if(t>=CN[c.id].d&&!c.done){c.done=1;go(c.next)}}
 function drawPtc(){ctx.globalCompositeOperation='lighter';ptc.forEach(p=>{ctx.globalAlpha=M.max(0,p.l/p.m);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,6.3);ctx.fill()});ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
 function cineDraw(){const c=S.cine,t=c.t;ctx.save();{const z0=1+.05*E(0,CN[c.id].d,t);ctx.translate(480+M.sin(t*.4)*6,270);ctx.scale(z0,z0);ctx.translate(-480,-270)}if(c.id=='reunion'){const z=1+.12*sm(E(15,27,t));ctx.translate(500,380);ctx.scale(z,z);ctx.translate(-500,-380)}
 CN[c.id].s(t);rays(t,c.id);drawPtc();c.h.forEach(p=>heart(p.x,p.y,1.1,`rgba(255,106,138,${M.min(1,p.l)})`));ctx.restore();
-ctx.fillStyle='#000';ctx.fillRect(0,0,W,46);ctx.fillRect(0,H-70,W,70);const cp=CN[c.id].cap().find(q=>t>=q[0]&&t<=q[1]);if(cp){const tx=cp[2],sp=/^Noor:/.test(tx)?'n':/^Shams:/.test(tx)?'s':/^Mira:/.test(tx)?'m':'',col={n:'#aef6ff',s:'#ffd27a',m:'#d8c8ff','':'#ffe9c8'}[sp],ag=t-cp[0],nn=M.min(tx.length,ag*(VO.on&&hasTTS?M.max(15,tx.length/((cp[1]-cp[0])*.8)):38)|0);ctx.globalAlpha=M.min(1,ag*3,(cp[1]-t)*3);ctx.font='italic 21px Georgia,serif';const w=ctx.measureText(tx).width;if(sp=='n')gl(W/2-w/2-24,H-36,14+3*M.sin(t*8),'120,240,255',.8);ctx.textAlign='left';ctx.shadowColor=col;ctx.shadowBlur=sp=='n'?14:0;ctx.fillStyle=col;ctx.fillText(tx.slice(0,nn),W/2-w/2,H-30);ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.textAlign='center'}
+ctx.fillStyle='#000';ctx.fillRect(0,0,W,46);ctx.fillRect(0,H-70,W,70);const cp=CN[c.id].cap().find(q=>t>=q[0]&&t<=q[1]);if(cp){const tx=cp[2],sp=/^Noor:/.test(tx)?'n':/^Shams:/.test(tx)?'s':/^Mira:/.test(tx)?'m':'',col={n:'#aef6ff',s:'#ffd27a',m:'#d8c8ff','':'#ffe9c8'}[sp],ag=t-cp[0],nn=M.min(tx.length,ag*38|0);ctx.globalAlpha=M.min(1,ag*3,(cp[1]-t)*3);ctx.font='italic 21px Georgia,serif';const w=ctx.measureText(tx).width;if(sp=='n')gl(W/2-w/2-24,H-36,14+3*M.sin(t*8),'120,240,255',.8);ctx.textAlign='left';ctx.shadowColor=col;ctx.shadowBlur=sp=='n'?14:0;ctx.fillStyle=col;ctx.fillText(tx.slice(0,nn),W/2-w/2,H-30);ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.textAlign='center'}
 t_('Enter / tap: skip',W-16,H-8,12,'#777','right');post()}
 function rays(t,id){const col={prologue:'255,170,90',elder:'140,255,200',burn:'255,110,60',reunion:'255,210,140'}[id];ctx.save();ctx.globalCompositeOperation='lighter';for(let i=0;i<5;i++){const x=120+i*190+M.sin(t*.35+i)*40,a=.045+.02*M.sin(t*.8+i*2),g=ctx.createLinearGradient(x,0,x+80,H);g.addColorStop(0,`rgba(${col},${a})`);g.addColorStop(1,`rgba(${col},0)`);ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+60,0);ctx.lineTo(x+240,H);ctx.lineTo(x+120,H);ctx.fill()}ctx.restore();for(let i=0;i<24;i++)gl(((i*97+t*(8+i%5*4))%1000)-20,(i*61+M.sin(t*.7+i)*30+t*(3+i%3))%H,3+i%3*1.5,col,.4)}
 function post(){const v=ctx.createRadialGradient(W/2,H/2,H*.4,W/2,H/2,H*.9);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.55)');ctx.fillStyle=v;ctx.fillRect(0,0,W,H);if(fade.a>0){ctx.fillStyle=`rgba(0,0,0,${fade.a})`;ctx.fillRect(0,0,W,H)}}
-const _cont=cont;cont=function(){if(state=='CINE'){if(S.cine.t>1&&!S.cine.done){noorStop();S.cine.t=CN[S.cine.id].d}}else _cont()};
+const _cont=cont;cont=function(){if(state=='CINE'){if(S.cine.t>1&&!S.cine.done){S.cine.t=CN[S.cine.id].d}}else _cont()};
 const _click=click;click=function(x,y){if(state=='CINE'){cont();return}_click(x,y)};
 
 // ===== CHARACTER KIT (from game-characters.html): Shams uses the Kael look, Noor uses the Lyra look =====
