@@ -79,7 +79,7 @@ class Minion{constructor(a){this.x=a[0];this.y=a[1];this.x0=a[2];this.x1=a[3];th
 get b(){return{x:this.x-15,y:this.y-36,w:30,h:36}}
 kill(){this.dead=1;SFX.kill();FX.stop=.05;em(this.x,this.y-18,22,'#8a4cff',150,.8,-80,3);em(this.x,this.y-18,8,'#ffb347',120,.5,60,2)}
 up(dt){this.t+=dt;const ls=near(this.x),z=S.zones.some(z=>z.on&&this.x>z.x&&this.x<z.x+z.w),d=P.x-this.x;
-if(ls){this.st='retreat';this.hp-=dt*.7}else if(M.abs(d)<(z?440:260)&&M.abs(P.y+P.h-this.y)<140)this.st='chase';else this.st='patrol';
+if(ls){this.st='retreat'}else if(M.abs(d)<(z?440:260)&&M.abs(P.y+P.h-this.y)<140)this.st='chase';else this.st='patrol';
 const sp=this.st=='chase'?(z?150:95):this.st=='retreat'?80:45;let dir;
 if(this.st=='patrol'){if(this.x<this.x0)this.dir=1;if(this.x>this.x1)this.dir=-1;dir=this.dir}else if(this.st=='chase')dir=this.c?(M.abs(d)<200?-M.sign(d):M.abs(d)>300?M.sign(d):0):M.sign(d)||1;else dir=M.sign(this.x-ls.x)||1;
 this.x=cl(this.x+dir*sp*dt,this.x0-80,this.x1+80);this.face=dir||this.face;if(this.c&&this.st=='chase'&&M.abs(d)<420&&(this.cd=(this.cd||1.2)-dt)<=0){this.cd=2.2;SFX.bolt();S.bolts.push({x:this.x,y:this.y-20,vx:M.sign(d)*180})}if(R()<.2)em(this.x,this.y-10,1,'#6a3cc0',30,.8,-30,2);
