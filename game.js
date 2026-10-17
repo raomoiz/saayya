@@ -6,7 +6,7 @@ const W=960,H=540,G=440,M=Math,R=M.random,K={l:0,r:0,j:0,f:0,jp:0};
 // LEVEL DATA (3 levels: 0 = Ash Road + Dark Forest merged, 1 = Sky Battle, 2 = Valdrik's Castle). P platforms[x,y,w,h] A alt-route B blocks[x,y,w,h,kind,need] T torches[x,y,kind,tag] mn minions[x,y,x0,x1] z dark zones[x,w,torch] br braziers cp checkpoints hz hazards K strikes tr triggers
 const LV=[
 {n:"Ash Road to the Dark Forest",n2:"The Dark Forest",w:7000,
-get th(){return S.ph?1:0},get dark(){return S.ph?.62:.2},vo:4,tm:270,fz:3200,
+get th(){return S.ph?1:0},get dark(){return S.ph?.62:.2},vo:4,tm:270,fz:3200,mira:3330,amb:[[3040,G,2970,3095,1],[3085,G,3030,3099],[2760,G,2680,2840]],
 story:["Ash fell on Shams's forge the night Qaher came.","Noor pressed an ember pendant into his hand: 'It glows while I live.'","The Shadow King's trail runs down the Ash Road, and into the Dark Forest beyond."],
 hint:["Arrows/WASD move, Space jumps","J throws Ember Strike: burn webs and barricades","Stand at a brazier to refill flames. Stomp or burn shadows."],
 hint2:["Dark zones make shadows faster: light the torches","Gate torches need fire from your Ember Strike","Beware: some choices cost more than flame."],
@@ -27,12 +27,23 @@ hz:[[2150,424,70,16]],
 F:[[430,3.4,.5,1],[1230,3.2,1.5,1],[1900,3,.2,1],[2420,3.4,2,1],[2900,3,1,1],[5800,3.4,.8,1],[6450,3.2,2,1]],
 tr:[[2880,'ambush'],[4780,'hurdle'],[6200,'riddle']],vil:[4890,4950,5010],
 goal:{x:6920}},
-{n:"Sky Battle",w:960,th:2,dark:0,sky:1,story:["The castle rises into the clouds under a blood-purple moon.","Shadow archers wait on floating steps across the sky.","Noor's pendant is dimmer. Hurry."],hint:["Arrows/WASD move. Mouse (or Q/E) aims","Hold Space, J or click to charge, release to shoot","Stay in your zone. Defeat 9 shadows in 3 waves"],P:[],cp:[60],shs:[[310,200,2]]},
+{n:"Sky Battle",w:960,th:2,dark:0,sky:1,story:["The castle rises into the clouds under a blood-purple moon.","Shadow archers wait on floating steps across the sky.","Noor's pendant is dimmer. Hurry."],hint:["Arrows/WASD move. Mouse (or Q/E) aims","Hold Space, J or click to charge, release to shoot","Stay in your zone. Defeat 6 shadows in 2 waves"],P:[],cp:[60],shs:[[310,200,2]]},
 {n:"Valdrik's Castle",w:4200,th:2,dark:.72,boss:1,ao:3240,av:[3300,3340,4150],story:["Qaher waits, a shadow among shadows.","He is only vulnerable while your fire lights the room.","Throw fire to reveal him. Then strike."],hint:["Throw fire to light the room and reveal Qaher","While he is lit, hit him with a fireball or your sword (F)","Jump the shadow bolts. Do not touch him while he is visible."],
 P:[[0,G,900,100],[1000,G,800,100],[1900,G,900,100],[2900,G,1300,100],[1500,360,80,16],[1580,280,80,16],[1660,200,80,16],[2150,350,120,16]],
 B:[[700,280,26,160,'wood'],[2450,280,34,160,'web']],T:[[250,G,'t'],[1250,G,'t'],[2300,G,'t']],
 mn:[[400,G,350,450],[1350,G,1300,1400],[2250,G,2200,2300],[1100,G,1100,1200,1],[2050,G,2050,2150,1],[2600,G,2550,2650,1],[3050,G,3050,3150,1]],
 br:[100,1050,1950,2950,3300,4120],cp:[60,1020,1920,2920],hz:[[600,424,50,16],[1300,424,50,16],[2300,424,60,16],[2650,424,50,16]],tr:[[3320,'boss']],spots:[3420,3720,4020]}];
+// LEVEL 1 TRIMMING: stretches of the long level are cut out (obstacles inside them removed) so it is ~18% shorter; everything else keeps its original spacing, so difficulty per screen is unchanged.
+(function(){const l=LV[0],C=[[1370,1620],[2230,2480],[3100,3200],[4440,4580],[5880,6120],[6600,6840]];
+const g=x=>{let d=0;for(const[a,b]of C)d+=M.max(0,M.min(x,b)-a);return x-d},ins=x=>C.some(([a,b])=>x>a&&x<b);
+const pt=a=>a.filter(r=>!ins(r[0])).map(r=>[g(r[0]),...r.slice(1)]);
+const pf=a=>a.map(r=>[g(r[0]),r[1],g(r[0]+r[2])-g(r[0]),r[3],...r.slice(4)]).filter(r=>r[2]>0);
+l.P=pf(l.P);l.A=pf(l.A);l.B=pf(l.B.filter(r=>!ins(r[0])));
+l.T=l.T.map(r=>[g(r[0]),...r.slice(1)]);l.z=l.z.map(r=>[g(r[0]),g(r[0]+r[1])-g(r[0]),r[2]]);
+const mn=a=>a.filter(r=>!ins(r[0])).map(r=>{const q=r.slice();q[0]=g(r[0]);q[2]=g(r[2]);q[3]=g(r[3]);return q});
+l.mn=mn(l.mn);l.amb=mn(l.amb);l.shs=l.shs.map(r=>[g(r[0]),r[1],r[2]]);
+l.br=l.br.filter(x=>!ins(x)).map(g);l.cp=l.cp.filter(x=>!ins(x)).map(g);l.hz=pt(l.hz);l.F=pt(l.F);l.tr=l.tr.map(r=>[g(r[0]),r[1]]);l.vil=l.vil.map(g);
+l.goal.x=g(l.goal.x);l.fz=g(l.fz);l.mira=g(l.mira);l.w=g(l.w);l.tm=M.round(l.tm*l.w/7000/5)*5})();
 const PAL=[['#2b1a4a','#b5473a','#ffb347'],['#02100f','#0a3a3a','#0d2b33'],['#1c0626','#6a1a45','#2a0a24']];
 let state='TITLE',L=0,lv=LV[0],S={cam:0,t:0,torches:[],mins:[],blocks:[],plats:[],alt:[],zones:[],fb:[],bolts:[],ch:6},P,sh=[0,0,0],villageSaved=false,easy=false,fade={a:0,d:0,cb:null},shake=0,ptc=[],si=0,ri=[],rw=[],ending='';
 const ov=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y,cl=(v,a,b)=>M.max(a,M.min(b,v));
@@ -156,7 +167,7 @@ if(S.boss)S.boss.up(dt);npcUp();if(!S.used.s&&S.mins.some(m=>M.abs(m.x-P.x-12)<1
 S.bolts.forEach(b=>{b.x+=b.vx*dt;if(ov(P,{x:b.x-17,y:b.y-8,w:34,h:16})){hurt();b.x=-999}if(R()<.5)em(b.x,b.y,1,'#8a4cff',20,.5,0,3)});S.bolts=S.bolts.filter(b=>b.x>S.cam-60&&b.x<S.cam+W+60);
 (lv.shs||[]).forEach(q=>{if(!sh[q[2]]&&M.hypot(P.x+12-q[0],P.y+20-q[1])<30){sh[q[2]]=1;SFX.shard();FX.flash=.3;FX.fc='120,240,255';em(q[0],q[1],40,'#7af0ff',200,1,0,3);msg('Ember shard found! ('+sh.filter(x=>x).length+'/3)')}});
 lv.cp.forEach(c=>{if(P.x>c&&c>S.cx&&P.g){S.cx=c;S.ctl=S.tl;em(c,G-30,22,'#7af0ff',130,.9,-50,2.5);SFX.check();{const w=NW[(L*3+lv.cp.indexOf(c))%NW.length];msg(w)}}});
-(lv.tr||[]).forEach(t=>{if(P.x<t[0])return;if(t[1]=='boss'&&!S.used.b&&state=='PLAYING'){S.used.b=1;S.boss=new Valdrik();S.bar={x:lv.ao,y:0,w:20,h:440,k:'gate',need:null,dead:0};S.blocks.push(S.bar);if(!easy)S.tl=M.max(S.tl,90)+(villageSaved?0:30);if(villageSaved){P.hp=maxHp();msg('The villagers come with lanterns!')}else msg('Valdrik awaits in the dark...')}if(t[1]=='ambush'&&!S.used.am&&state=='PLAYING'){S.used.am=1;[[3050,G,2980,3140,1],[3130,G,3040,3200],[2760,G,2680,2840]].forEach(a=>S.mins.push(new Minion(a)));shake=6;msg('Ambush! Shadows block the road to the forest!')}if(t[1]=='hurdle'&&!S.used.h){S.used.h=1;S.cx=t[0];S.ctl=S.tl;state='CHOICE'}if(t[1]=='riddle'&&!S.riddle&&state=='PLAYING'){ri=[0,1,2].sort(()=>R()-.5);rw=[];state='RIDDLE'}});
+(lv.tr||[]).forEach(t=>{if(P.x<t[0])return;if(t[1]=='boss'&&!S.used.b&&state=='PLAYING'){S.used.b=1;S.boss=new Valdrik();S.bar={x:lv.ao,y:0,w:20,h:440,k:'gate',need:null,dead:0};S.blocks.push(S.bar);if(!easy)S.tl=M.max(S.tl,90)+(villageSaved?0:30);if(villageSaved){P.hp=maxHp();msg('The villagers come with lanterns!')}else msg('Valdrik awaits in the dark...')}if(t[1]=='ambush'&&!S.used.am&&state=='PLAYING'){S.used.am=1;lv.amb.forEach(a=>S.mins.push(new Minion(a)));shake=6;msg('Ambush! Shadows block the road to the forest!')}if(t[1]=='hurdle'&&!S.used.h){S.used.h=1;S.cx=t[0];S.ctl=S.tl;state='CHOICE'}if(t[1]=='riddle'&&!S.riddle&&state=='PLAYING'){ri=[0,1,2].sort(()=>R()-.5);rw=[];state='RIDDLE'}});
 if(lv.fz){const nph=P.x>lv.fz?1:0;if(nph!==S.ph){S.ph=nph;FX.flash=.5;FX.fc='6,4,16';if(nph&&!S.used.fo){S.used.fo=1;S.t0=S.t;musCue(48);msg('The Ash Road ends. The Dark Forest begins...')}}}
 const g=lv.goal;if(g&&M.abs(P.x+12-g.x)<30&&(g.need==null||S.torches[g.need].lit)&&!S.end){S.end=1;SFX.win();go(()=>startStory(L+1))}}
 let st=[0];
@@ -289,7 +300,7 @@ if(lv.boss)return S.lit>0?.32:.1;
 let v=.22;if(S.zones.some(z=>z.on&&P.x>z.x&&P.x<z.x+z.w))v=.11;if(near(P.x+12))v+=.1;return v*(.55+.45*pend())}
 // story progress 0..1 (start of game -> final fight / reunion); drives tempo + loudness of the song
 function prog(){if(state=='ENDING'||(state=='CINE'&&S.cine&&S.cine.id=='reunion'))return 1;if(state=='CINE'&&S.cine&&S.cine.id=='burn')return .85;if(state=='TITLE')return 0;const f=lv.sky?cl(SK.kills/(SK.total||9),0,1):cl((P?P.x:0)/lv.w,0,1);return cl((L+f)/3,0,1)}
-function musUp(dt){const e=MU.el;if(!e||!MU.on)return;const pg=prog(),pk=pg*pg*(3-2*pg);let tv=musTarget()*(.7+.45*pk),rate=.86+.18*pk;MU.duck=M.max(0,MU.duck-dt*1.8);tv*=1-.45*MU.duck;if(AU.c&&AU.c.currentTime<MU.hold)tv*=.2;
+function musUp(dt){const e=MU.el;if(!e||!MU.on)return;const pg=prog(),pk=pg*pg*(3-2*pg);let tv=musTarget()*(.7+.45*pk)*1.4,rate=.86+.18*pk;MU.duck=M.max(0,MU.duck-dt*1.8);tv*=1-.45*MU.duck;if(AU.c&&AU.c.currentTime<MU.hold)tv*=.2;
 if(state=='PLAYING'&&!easy&&pend()<.33)rate*=.82+.18*pend()/.33;if(state=='DEAD')rate=.8;
 if(MU.seek!=null){tv=0;if(MU.v<.03){try{e.currentTime=MU.seek}catch(x){}MU.seek=null;if(e.paused)e.play().catch(()=>{})}}
 else if(state=='ENDING'||(state=='CINE'&&S.cine.id=='reunion')){if(e.ended||e.currentTime>191)MU.seek=RC+22}else if(e.currentTime>194)MU.seek=10;
@@ -331,8 +342,8 @@ const cps=()=>42; // caption reading speed (chars/sec)
 const RC=34;
 // ===== NPCs and whispers =====
 const NW=["Noor: 'The ember is warm... I am still here.'","Noor: 'Don't look back, Shams.'","Noor: 'Fire is light, not rage.'","Noor: 'I hear your hammer in my heart.'","Noor: 'Choose kindly, my love.'","Noor: 'Almost there. Keep burning.'"];
-function npcs(){if(L==0)elder(3330,G,1,S.t,1)}
-function npcUp(){if(L==0&&!S.used.e&&M.abs(P.x-3330)<110){S.used.e=1;msg("Mira: 'Feed the torches. The dark fears fire.'")}}
+function npcs(){if(L==0)elder(lv.mira,G,1,S.t,1)}
+function npcUp(){if(L==0&&!S.used.e&&M.abs(P.x-lv.mira)<110){S.used.e=1;msg("Mira: 'Feed the torches. The dark fears fire.'")}}
 // ===== CHARACTERS =====
 function rehan(x,y,f,t,o){o=o||{};const q=new Pl(0);q.x=x-12;q.y=y-44;q.face=f;q.an=t;q.vx=o.vx||0;q.g=o.air?0:1;q.ar=o.ar;q.cd=o.cd||0;q.draw()}
 function noorA(x,y,f,t,o){o=o||{};ctx.save();ctx.translate(x,y);ctx.scale(f,1);ctx.globalAlpha=o.a==null?1:o.a;const wk=o.walk?M.abs(M.sin(t*9))*2.5:0,p=o.pose;ctx.translate(0,-wk);ctx.rotate(p=='reach'?-.08+M.sin(t*6)*.03:0);
@@ -492,7 +503,7 @@ ctx.restore()}
 
 // ===== LEVEL 3: SKY BATTLE (replaces the old castle level; tweak the numbers here) =====
 const SKY_CFG={heroMaxHealth:140,zombieMaxHealth:50,heroArrowDamage:20,zombieArrowDamage:12,zombieShootCooldownMin:1.15,zombieShootCooldownMax:2.8,maxArrowSpeed:820,gravity:620,
-waves:3,perWave:3,heroZone:.4,heroSpeed:230,chargeTime:1.1,minPower:.22,heroShotCd:.28,waveRefill:.18,bannerTime:2,winDelay:1.8,easyDmgMul:.6,easyCdMul:1.3};
+waves:2,perWave:3,heroZone:.4,heroSpeed:230,chargeTime:1.1,minPower:.22,heroShotCd:.28,waveRefill:.18,bannerTime:2,winDelay:1.8,easyDmgMul:.6,easyCdMul:1.3};
 const SKZ0=W*SKY_CFG.heroZone; // right edge of the hero zone (left 40%); zombies never go left of it
 const SKK={up:0,dn:0,sp:0,aq:0,ae:0}; // Level 3 only keys (everything else reuses K)
 const SK={bound:0,h:null,z:[],ar:[],fx:[],wave:1,kills:0,total:9,phase:'banner',bt:0,charging:0,pw:0,aim:-.55,mouse:0,um:0,mx:0,my:0,t:0,over:0,going:0,winT:0};
@@ -621,7 +632,7 @@ t_('Wave '+SK.wave+'/'+C.waves,24,62,18,'#ffd27a','left');t_('Shadows defeated: 
 const r=pend();ctx.save();ctx.shadowColor='#ff8a1f';ctx.shadowBlur=18*r;ctx.strokeStyle=`rgba(255,${120+110*r|0},60,${.25+.75*r})`;ctx.lineWidth=6;ctx.beginPath();ctx.arc(915,34,18,0,6.3);ctx.stroke();ctx.fillStyle=`rgba(255,200,100,${.2+.6*r})`;ctx.beginPath();ctx.arc(915,34,7,0,6.3);ctx.fill();ctx.restore();
 if(SK.t<3.5){ctx.globalAlpha=M.min(1,3.5-SK.t);t_(lv.n,W/2,110,34,'#ffd27a','center','italic');ctx.globalAlpha=1}
 if(SK.t<9&&lv.hint){const i=M.min(2,SK.t/3|0);t_(lv.hint[i],W/2,H-30,18,'#fff','center')}
-if(SK.phase=='banner'&&!SK.over){ctx.globalAlpha=M.min(1,SK.bt*2,(C.bannerTime-SK.bt)*3);t_('Wave '+SK.wave+'!',W/2,240,56,'#ffb347','center','italic');t_(SK.wave==1?'Defeat 9 shadow archers':'Noor\'s light mends your wounds',W/2,282,20,'#d8c8ff');ctx.globalAlpha=1}
+if(SK.phase=='banner'&&!SK.over){ctx.globalAlpha=M.min(1,SK.bt*2,(C.bannerTime-SK.bt)*3);t_('Wave '+SK.wave+'!',W/2,240,56,'#ffb347','center','italic');t_(SK.wave==1?'Defeat '+SK.total+' shadow archers':'Noor\'s light mends your wounds',W/2,282,20,'#d8c8ff');ctx.globalAlpha=1}
 if(S.msg){ctx.globalAlpha=M.min(1,S.msg.l);t_(S.msg.t,W/2,160,20,'#ffe9b0','center');ctx.globalAlpha=1}}
 
 // FIXED TIMESTEP LOOP
