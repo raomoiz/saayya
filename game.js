@@ -1,8 +1,8 @@
 
 // ARCHITECTURE: CONFIG + LEVEL DATA -> entity classes (update/draw) -> fixed 60Hz update() -> render(); state machine drives canvas UI.
-const CFG={grav:1900,run:235,jump:660,coyote:.1,buf:.1,cd:.35,fbSpeed:470,fbLife:1.2,charges:6,refill:4,brazierR:130,timer:150,hearts:3,inv:1.2,lightWin:3,lightWinSaved:5,detour:40,wrong:10,bossTime:[200,140],bossHP:4,hurdleCharges:3,step:1/60};
+const CFG={grav:1900,run:235,jump:740,coyote:.1,buf:.1,cd:.35,fbSpeed:470,fbLife:1.2,charges:6,refill:4,brazierR:130,timer:150,hearts:3,inv:1.2,lightWin:3,lightWinSaved:5,detour:40,wrong:10,bossTime:[200,140],bossHP:4,hurdleCharges:3,step:1/60};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d'),lc=document.createElement('canvas');lc.width=960;lc.height=540;const lx=lc.getContext('2d');
-const W=960,H=540,G=440,M=Math,R=M.random,K={l:0,r:0,j:0,f:0,jp:0};
+const W=960,H=540,G=440,PH=72,LIFT=28,M=Math,R=M.random,K={l:0,r:0,j:0,f:0,jp:0};
 // LEVEL DATA (3 levels: 0 = Ash Road + Dark Forest merged, 1 = Sky Battle, 2 = Valdrik's Castle). P platforms[x,y,w,h] A alt-route B blocks[x,y,w,h,kind,need] T torches[x,y,kind,tag] mn minions[x,y,x0,x1] z dark zones[x,w,torch] br braziers cp checkpoints hz hazards K strikes tr triggers
 const LV=[
 {n:"Ash Road to the Dark Forest",n2:"The Dark Forest",w:7000,
@@ -44,6 +44,7 @@ const mn=a=>a.filter(r=>!ins(r[0])).map(r=>{const q=r.slice();q[0]=g(r[0]);q[2]=
 l.mn=mn(l.mn);l.mn.forEach((m,i)=>{if(i%3==1)m[4]=1});l.amb=mn(l.amb);l.shs=l.shs.map(r=>[g(r[0]),r[1],r[2]]);
 l.br=l.br.filter(x=>!ins(x)).map(g);l.cp=l.cp.filter(x=>!ins(x)).map(g);l.hz=pt(l.hz);l.F=pt(l.F);l.tr=l.tr.map(r=>[g(r[0]),r[1]]);l.vil=l.vil.map(g);
 l.goal.x=g(l.goal.x);l.fz=g(l.fz);l.mira=g(l.mira);l.w=g(l.w);l.tm=M.round(l.tm*l.w/7000/5)*5})();
+LV[0].P.concat(LV[0].A,LV[2].P).forEach(p=>{if(p[1]<G)p[1]-=LIFT});LV[0].shs.forEach(q=>q[1]-=LIFT);
 const PAL=[['#2b1a4a','#b5473a','#ffb347'],['#02100f','#0a3a3a','#0d2b33'],['#1c0626','#6a1a45','#2a0a24']];
 let state='TITLE',L=0,lv=LV[0],S={cam:0,t:0,torches:[],mins:[],blocks:[],plats:[],alt:[],zones:[],fb:[],bolts:[],ch:6},P,sh=[0,0,0],villageSaved=false,easy=false,fade={a:0,d:0,cb:null},shake=0,ptc=[],si=0,ri=[],rw=[],ending='';
 const ov=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y,cl=(v,a,b)=>M.max(a,M.min(b,v));
@@ -52,7 +53,7 @@ function em(x,y,n,c,sp,life,g,sz){for(let i=0;i<n&&ptc.length<500;i++){const a=R
 function msg(t){S.msg={t,l:3.5}}
 function go(cb){fade.d=1;fade.cb=cb}
 // ENTITIES
-class Pl{constructor(x){this.x=x;this.y=G-44;this.w=24;this.h=44;this.vx=this.vy=0;this.face=1;this.g=1;this.co=this.bf=this.cd=this.inv=this.an=0;this.hp=maxHp()}
+class Pl{constructor(x){this.x=x;this.y=G-PH;this.w=24;this.h=PH;this.vx=this.vy=0;this.face=1;this.g=1;this.co=this.bf=this.cd=this.inv=this.an=0;this.hp=maxHp()}
 up(dt){const a=K.r-K.l;this.pg=(this.pg||0)-dt;this.vx=a*CFG.run+(this.sa>0&&!this.sds?this.face*110*M.pow(this.sa/SW_ANIM,2):0);if(a)this.face=a;this.an+=dt*(a?1:.2);{const sp=(this.an*12/M.PI)|0;if(!a||!this.g)this.ls=sp;else if(sp!==this.ls){this.ls=sp;SFX.step()}}this.cd-=dt;this.inv-=dt;this.co-=dt;this.bf-=dt;
 if(K.jp){this.bf=CFG.buf;K.jp=0}if(this.g)this.co=CFG.coyote;
 if(this.bf>0&&this.co>0){this.vy=-CFG.jump;this.bf=0;this.co=0;this.g=0;SFX.jump()}
@@ -60,12 +61,12 @@ if(!K.j&&this.vy<-300&&!(this.pg>0))this.vy=-300;if((K.f||fq>0)&&this.cd<=0){fq=
 const ff=K.dn&&!this.g&&this.vy>-150&&state=='PLAYING';this.ff=ff;this.vy=M.min(this.vy+CFG.grav*(ff?2.4:1)*dt,ff?1200:950);if(ff&&R()<.5)em(this.x+12,this.y+6,1,'#e8d0b0',30,.3,0,2);const so=solids();
 this.x+=this.vx*dt;for(const s of so)if(ov(this,s)){if(this.vx>0)this.x=s.x-this.w;else if(this.vx<0)this.x=s.x+s.w}
 const wg=this.g,fv=this.vy;this.y+=this.vy*dt;this.g=0;for(const s of so)if(ov(this,s)){if(this.vy>0){this.y=s.y-this.h;this.g=1}else this.y=s.y+s.h;this.vy=0}
-if(this.g&&!wg&&fv>250){SFX.land();FX.rings.push({x:this.x+12,y:this.y+44,r:4,v:150,l:.3,m:.3,c:'#caa58a',w:2,sq:.25});em(this.x+12,this.y+44,10,'#8a6a50',70,.5,-20,2);shake=M.max(shake,fv>700?4:1.5)}else if(this.g&&M.abs(this.vx)>1&&R()<.2)em(this.x+12,this.y+44,1,'#8a6a50',25,.4,-15,2)}
-draw(){const mv=M.abs(this.vx)>1&&this.g;let r=pend();if(!(r>=0))r=1;ctx.save();ctx.translate(this.x+12,this.y+44);ctx.scale(this.face,1);if(this.inv>0&&((this.inv*20)|0)%2)ctx.globalAlpha=.4;
+if(this.g&&!wg&&fv>250){SFX.land();FX.rings.push({x:this.x+12,y:this.y+PH,r:4,v:150,l:.3,m:.3,c:'#caa58a',w:2,sq:.25});em(this.x+12,this.y+PH,10,'#8a6a50',70,.5,-20,2);shake=M.max(shake,fv>700?4:1.5)}else if(this.g&&M.abs(this.vx)>1&&R()<.2)em(this.x+12,this.y+PH,1,'#8a6a50',25,.4,-15,2)}
+draw(){const mv=M.abs(this.vx)>1&&this.g;let r=pend();if(!(r>=0))r=1;ctx.save();ctx.translate(this.x+12,this.y+PH);ctx.scale(this.face,1);ctx.scale(1.5,1.5);if(this.inv>0&&((this.inv*20)|0)%2)ctx.globalAlpha=.4;
 ctx.translate(0,mv?-M.abs(M.sin(this.an*12))*3.2:0);ctx.rotate(mv?.05:(this.g?0:-.06));
-KW={a:mv?1:0,p:this.an*12,air:this.g?0:1};drawKit(CHARACTERS.shams,-100*KS,-322*KS,KS,S.t||0,null);KW.a=0;KW.air=0; // Shams: Kael look
+const fr=this.cd>0?M.max(0,M.min(1,(CFG.cd-this.cd)*14,this.cd*7)):0;KW={a:mv?1:0,p:this.an*12,air:this.g?0:1,r:fr};drawKit(CHARACTERS.shams,-100*KS,-322*KS,KS,S.t||0,null);KW.a=0;KW.air=0;KW.r=0; // Shams: Kael look
 ctx.save();ctx.globalAlpha*=.4+.6*r;ctx.fillStyle='#ffb347';ctx.shadowColor='#ff8a1f';ctx.shadowBlur=10*r;ctx.beginPath();ctx.arc(0,-37,2.6,0,6.3);ctx.fill();ctx.restore();
-if(this.cd>.15){ctx.fillStyle='#ffd27a';ctx.beginPath();ctx.arc(8.6,-21,5,0,6.3);ctx.fill()}
+if(this.cd>.15&&fr>0){const an=-FR_ANG*fr*M.PI/180,dx=8,dy=78,hx=140+dx*M.cos(an)-dy*M.sin(an),hy=88+dx*M.sin(an)+dy*M.cos(an);ctx.fillStyle='#ffd27a';ctx.shadowColor='#ff8a1f';ctx.shadowBlur=12;ctx.beginPath();ctx.arc((hx+10-100)*KS,(hy-322)*KS,5,0,6.3);ctx.fill();ctx.shadowBlur=0}
 if(this.sa>0){const q=1-this.sa/SW_ANIM,e=q*q*(3-2*q),A0=this.sds?.35:-2.1,A1=this.sds?2.8:.55,cx=this.sds?6:10,cy=this.sds?-18:-24,a=A0+(A1-A0)*e,fa=this.sa<.08?this.sa/.08:1;ctx.save();ctx.lineCap='round';ctx.shadowColor='#9ad0ff';ctx.shadowBlur=14;
 for(let k=0;k<6;k++){const t0=M.max(0,e-.05*(k+1)),t1=M.max(0,e-.05*k);ctx.globalAlpha=fa*(.55-k*.085);ctx.strokeStyle='#e8f4ff';ctx.lineWidth=7-k;ctx.beginPath();ctx.arc(cx,cy,54,A0+(A1-A0)*t0,A0+(A1-A0)*t1);ctx.stroke()}
 ctx.globalAlpha=fa;ctx.strokeStyle='#ffffff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(cx+2+M.cos(a)*14,cy+M.sin(a)*14);ctx.lineTo(cx+2+M.cos(a)*62,cy+M.sin(a)*62);ctx.stroke();ctx.restore()}ctx.restore()}}
@@ -75,7 +76,7 @@ class Minion{constructor(a){this.x=a[0];this.y=a[1];this.x0=a[2];this.x1=a[3];th
 get b(){return{x:this.x-15,y:this.y-36,w:30,h:36}}
 kill(){this.dead=1;SFX.kill();FX.stop=.05;em(this.x,this.y-18,22,'#8a4cff',150,.8,-80,3);em(this.x,this.y-18,8,'#ffb347',120,.5,60,2)}
 up(dt){this.t+=dt;const ls=near(this.x),z=S.zones.some(z=>z.on&&this.x>z.x&&this.x<z.x+z.w),d=P.x-this.x;
-if(ls){this.st='retreat';this.hp-=dt*.7}else if(M.abs(d)<(z?440:260)&&M.abs(P.y+P.h-this.y)<110)this.st='chase';else this.st='patrol';
+if(ls){this.st='retreat';this.hp-=dt*.7}else if(M.abs(d)<(z?440:260)&&M.abs(P.y+P.h-this.y)<140)this.st='chase';else this.st='patrol';
 const sp=this.st=='chase'?(z?150:95):this.st=='retreat'?80:45;let dir;
 if(this.st=='patrol'){if(this.x<this.x0)this.dir=1;if(this.x>this.x1)this.dir=-1;dir=this.dir}else if(this.st=='chase')dir=this.c?(M.abs(d)<200?-M.sign(d):M.abs(d)>300?M.sign(d):0):M.sign(d)||1;else dir=M.sign(this.x-ls.x)||1;
 this.x=cl(this.x+dir*sp*dt,this.x0-80,this.x1+80);this.face=dir||this.face;if(this.c&&this.st=='chase'&&M.abs(d)<420&&(this.cd=(this.cd||1.2)-dt)<=0){this.cd=2.2;SFX.bolt();S.bolts.push({x:this.x,y:this.y-20,vx:M.sign(d)*180})}if(R()<.2)em(this.x,this.y-10,1,'#6a3cc0',30,.8,-30,2);
@@ -132,13 +133,13 @@ const solids=()=>S.plats.concat(S.altOn?S.alt:[],S.blocks.filter(b=>!b.dead));
 function lights(){const a=[];if(!(S.boss&&S.boss.dead))(lv.F||[]).forEach(f=>{const p=(S.t+f[2])%f[1];if(p<f[3]||p>f[1]-.9)a.push({x:f[0],y:G-50,r:p<f[3]?110:70})});S.torches.forEach(t=>{if(t.lit)a.push({x:t.x,y:t.y-50,r:t.k=='l'?150:130})});(lv.br||[]).forEach(x=>a.push({x,y:G-20,r:120}));return a}
 function near(x){return lights().find(l=>M.abs(l.x-x)<130&&l.r>=120)}
 const pend=()=>easy?1:cl(S.tl/(S.max||150),0,1);
-function fire(){if(S.ch<=0){P.cd=.35;SFX.empty();return}S.ch--;SFX.fire();P.cd=CFG.cd;{const f=new Fireball(P.x+12+P.face*14,P.y+16,P.face);f.str=S.lit>0;S.fb.push(f)}em(P.x+12+P.face*16,P.y+16,8,'#ffb347',90,.4,0,2);if(lv.boss&&(!lv.ao||S.boss))S.lit=villageSaved?CFG.lightWinSaved:CFG.lightWin}
+function fire(){if(S.ch<=0){P.cd=.35;SFX.empty();return}S.ch--;SFX.fire();P.cd=CFG.cd;{const f=new Fireball(P.x+12+P.face*22,P.y+PH-34,P.face);f.str=S.lit>0;S.fb.push(f)}em(P.x+12+P.face*24,P.y+PH-34,8,'#ffb347',90,.4,0,2);if(lv.boss&&(!lv.ao||S.boss))S.lit=villageSaved?CFG.lightWinSaved:CFG.lightWin}
 const SW_ANIM=.3,SW_START=.26,SW_END=.1;let swq=0,fq=0,swHits=null,swBossHit=0,swPogo=0;
 function swing(){P.sds=!P.g&&K.dn?1:0;swPogo=0;P.sw=.32;P.sa=SW_ANIM;P.sface=P.face;swHits=new Set();swBossHit=0;SFX.sword();swHit()}
-function swHit(){if(!P||!swHits)return;const f=P.face,hb=P.sds?{x:P.x-16,y:P.y+20,w:56,h:96}:{x:f>0?P.x+8:P.x+16-104,y:P.y-14,w:104,h:70};let hit=0,en=0;for(const m of S.mins)if(!m.dead&&!swHits.has(m)&&ov(hb,m.b)){swHits.add(m);m.kill();hit=1;en=1;em(m.x,m.y-18,8,'#e8f4ff',140,.3,0,2)}const v=S.boss;if(v&&!v.dead&&!swBossHit&&ov(hb,{x:v.x-50,y:G-130,w:100,h:130})){swBossHit=1;en=1;hit=1;if(S.lit>0&&v.iv<=0){v.hit()}else v.chip()}for(const b of S.bolts)if(ov(hb,{x:b.x-17,y:b.y-8,w:34,h:16})){em(b.x,b.y,12,'#e8f4ff',150,.3,0,2);SFX.clink();b.x=-999;hit=1}if(P.sds&&en&&!swPogo){swPogo=1;P.vy=-460;P.g=0;P.co=0;P.pg=.3;em(P.x+12,P.y+50,10,'#e8f4ff',120,.3,0,2)}if(hit)shake=M.max(shake,4)}
-function hurt(){if(P.inv>0||state!='PLAYING')return;P.hp--;P.inv=CFG.inv;shake=12;SFX.hurt();FX.flash=.4;FX.fc='255,40,30';FX.stop=.06;P.vy=-300;em(P.x+12,P.y+20,16,'#ff5a1f',160,.6,60,3);if(P.hp<=0)die()}
+function swHit(){if(!P||!swHits)return;const f=P.face,hb=P.sds?{x:P.x-20,y:P.y+PH-24,w:64,h:96}:{x:f>0?P.x+8:P.x+16-116,y:P.y+PH-62,w:116,h:96};let hit=0,en=0;for(const m of S.mins)if(!m.dead&&!swHits.has(m)&&ov(hb,m.b)){swHits.add(m);m.kill();hit=1;en=1;em(m.x,m.y-18,8,'#e8f4ff',140,.3,0,2)}const v=S.boss;if(v&&!v.dead&&!swBossHit&&ov(hb,{x:v.x-50,y:G-130,w:100,h:130})){swBossHit=1;en=1;hit=1;if(S.lit>0&&v.iv<=0){v.hit()}else v.chip()}for(const b of S.bolts)if(ov(hb,{x:b.x-17,y:b.y-8,w:34,h:16})){em(b.x,b.y,12,'#e8f4ff',150,.3,0,2);SFX.clink();b.x=-999;hit=1}if(P.sds&&en&&!swPogo){swPogo=1;P.vy=-460;P.g=0;P.co=0;P.pg=.3;em(P.x+12,P.y+PH+6,10,'#e8f4ff',120,.3,0,2)}if(hit)shake=M.max(shake,4)}
+function hurt(){if(P.inv>0||state!='PLAYING')return;P.hp--;P.inv=CFG.inv;shake=12;SFX.hurt();FX.flash=.4;FX.fc='255,40,30';FX.stop=.06;P.vy=-300;em(P.x+12,P.y+PH/2,16,'#ff5a1f',160,.6,60,3);if(P.hp<=0)die()}
 let failWhy='hp',failBoss=false;
-function die(){if(state!='PLAYING'||S.end)return;failWhy=(!easy&&!lv.sky&&S.tl<=0)?'time':'hp';failBoss=!!(lv.boss&&S.boss&&!S.boss.dead);state='DEAD';if(failBoss)go(()=>cine('fail',()=>{respawn(1);musLevel(L)}));SFX.die();em(P.x+12,P.y+20,40,'#ff8a1f',220,1,40,3)}
+function die(){if(state!='PLAYING'||S.end)return;failWhy=(!easy&&!lv.sky&&S.tl<=0)?'time':'hp';failBoss=!!(lv.boss&&S.boss&&!S.boss.dead);state='DEAD';if(failBoss)go(()=>cine('fail',()=>{respawn(1);musLevel(L)}));SFX.die();em(P.x+12,P.y+PH/2,40,'#ff8a1f',220,1,40,3)}
 function respawn(full){if(lv.sky)skInit();if(S.bar){S.blocks=S.blocks.filter(b=>b!==S.bar);S.bar=null;S.boss=null;S.used.b=0;S.lit=0}P=new Pl(S.cx);S.fb=[];S.bolts=[];S.sp=[];if(full){S.tl=easy?S.max:M.max(S.ctl,40);state='PLAYING'}S.ch=S.hu?M.max(S.torches.filter(t=>!t.lit&&!t.lock&&t.tag).length,0):CFG.charges;P.hp=full?maxHp():P.hp}
 function load(i){L=i;lv=LV[i];const m=a=>({x:a[0],y:a[1],w:a[2],h:a[3]});
 S={plats:lv.P.map(m).concat([{x:-40,y:0,w:40,h:540},{x:lv.w,y:0,w:40,h:540}]),alt:(lv.A||[]).map(m),altOn:0,blocks:(lv.B||[]).map(a=>({...m(a),k:a[4],need:a[5],dead:0})),torches:(lv.T||[]).map(a=>({x:a[0],y:a[1],k:a[2],tag:a[3],lit:0,lock:0})),mins:(lv.mn||[]).map(a=>new Minion(a)),zones:(lv.z||[]).map(a=>({x:a[0],w:a[1],t:a[2],on:1})),fb:[],bolts:[],cam:0,t:0,lit:0,cx:lv.cp[0],hu:0,hd:0,riddle:0,used:{},sl:0,rb:0,msg:null,end:0,
@@ -159,7 +160,7 @@ if(!easy){S.tl-=dt;if(S.tl<=0){S.tl=0;return die()}}
 P.up(dt);if(P.y>700){hurt();const h=P.hp;if(state=='PLAYING'){respawn(0);P.hp=h;P.inv=CFG.inv}}
 S.cam+=((S.bar?S.bar.x:P.x+12+P.face*60-W/2)-S.cam)*M.min(1,dt*5);S.cam=cl(S.cam,S.cmin||0,M.max(0,lv.w-W));
 // flame refill
-const nb=!S.hu&&(lv.br||[]).some(x=>M.abs(P.x+12-x)<CFG.brazierR);if(nb&&S.ch<CFG.charges){S.ref+=dt;if(S.ref>=CFG.refill){S.ch++;S.ref=0;em(P.x+12,P.y+10,12,'#ffd27a',80,.6,-40,2)}}else S.ref=0;
+const nb=!S.hu&&(lv.br||[]).some(x=>M.abs(P.x+12-x)<CFG.brazierR);if(nb&&S.ch<CFG.charges){S.ref+=dt;if(S.ref>=CFG.refill){S.ch++;S.ref=0;em(P.x+12,P.y+PH/2-10,12,'#ffd27a',80,.6,-40,2)}}else S.ref=0;
 S.torches.forEach(t=>{if(t.lit&&R()<.4)em(t.x,t.y-(t.k=='l'?55:62),1,'#ffb347',20,.8,-50,2)});(lv.br||[]).forEach(x=>{if(R()<.5)em(x,G-28,1,'#ff8a1f',25,.9,-60,2.5)});
 S.fb.forEach(f=>f.up(dt));S.fb=S.fb.filter(f=>!f.dead);S.mins.forEach(m=>m.up(dt));S.mins=S.mins.filter(m=>!m.dead);
 S.zones.forEach(z=>{if(z.on&&S.torches[z.t].lit){z.on=0;em(z.x+z.w/2,G-60,40,'#ffd27a',200,1,-20,3)}});
@@ -170,9 +171,9 @@ else if(S.ch<need.filter(t=>!t.lit).length&&!S.fb.length){S.sl+=dt;if(S.sl>1.5){
 (lv.K||[]).forEach(k=>{const c=(S.t+k[2])%k[1];if(c>k[1]-.3&&M.abs(P.x+12-k[0])<22)hurt()});
 (lv.hz||[]).forEach(h=>{if(ov(P,{x:h[0],y:h[1],w:h[2],h:h[3]}))hurt()});
 if(!(S.boss&&S.boss.dead)){(lv.F||[]).forEach(f=>{const p=(S.t+f[2])%f[1];if(p<f[3]){if(!f.a){f.a=1;SFX.vent(M.abs(P.x-f[0]))}if(R()<.5)em(f[0]+(R()-.5)*20,G-R()*100,1,'#ffb347',30,.6,-90,2);if(p>.12&&ov(P,{x:f[0]-18,y:G-120,w:36,h:120}))hurt()}else f.a=0});if(lv.F&&!S.used.f&&lv.F.some(f=>M.abs(P.x-f[0])<320)){S.used.f=1;msg('Fire vents! When the glow dies down, dash through.')}}
-if(S.boss)S.boss.up(dt);npcUp();if(!S.used.s&&S.mins.some(m=>M.abs(m.x-P.x-12)<110&&M.abs(m.y-P.y-44)<70)){S.used.s=1;msg('A shadow is close! Press F, Shift or click (or tap the sword button) to swing your sword.')}
+if(S.boss)S.boss.up(dt);npcUp();if(!S.used.s&&S.mins.some(m=>M.abs(m.x-P.x-12)<110&&M.abs(m.y-P.y-PH)<70)){S.used.s=1;msg('A shadow is close! Press F, Shift or click (or tap the sword button) to swing your sword.')}
 S.bolts.forEach(b=>{b.x+=b.vx*dt;if(ov(P,{x:b.x-17,y:b.y-8,w:34,h:16})){hurt();b.x=-999}if(R()<.5)em(b.x,b.y,1,'#8a4cff',20,.5,0,3)});S.bolts=S.bolts.filter(b=>b.x>S.cam-60&&b.x<S.cam+W+60);
-(lv.shs||[]).forEach(q=>{if(!sh[q[2]]&&M.hypot(P.x+12-q[0],P.y+20-q[1])<30){sh[q[2]]=1;SFX.shard();FX.flash=.3;FX.fc='120,240,255';em(q[0],q[1],40,'#7af0ff',200,1,0,3);msg('Ember shard found! ('+sh.filter(x=>x).length+'/3)')}});
+(lv.shs||[]).forEach(q=>{if(!sh[q[2]]&&M.hypot(P.x+12-q[0],P.y+PH/2-q[1])<38){sh[q[2]]=1;SFX.shard();FX.flash=.3;FX.fc='120,240,255';em(q[0],q[1],40,'#7af0ff',200,1,0,3);msg('Ember shard found! ('+sh.filter(x=>x).length+'/3)')}});
 lv.cp.forEach(c=>{if(P.x>c&&c>S.cx&&P.g){S.cx=c;S.ctl=S.tl;em(c,G-30,22,'#7af0ff',130,.9,-50,2.5);SFX.check();{const w=NW[(L*3+lv.cp.indexOf(c))%NW.length];msg(w)}}});
 (lv.tr||[]).forEach(t=>{if(P.x<t[0])return;if(t[1]=='boss'&&!S.used.b&&state=='PLAYING'){S.used.b=1;S.boss=new Valdrik();S.bar={x:lv.ao,y:0,w:20,h:440,k:'gate',need:null,dead:0};S.blocks.push(S.bar);if(!easy)S.tl=M.max(S.tl,90)+(villageSaved?0:30);if(villageSaved){P.hp=maxHp();msg('The villagers come with lanterns!')}else msg('Valdrik awaits in the dark...')}if(t[1]=='ambush'&&!S.used.am&&state=='PLAYING'){S.used.am=1;lv.amb.forEach(a=>S.mins.push(new Minion(a)));shake=6;msg('Ambush! Shadows block the road to the forest!')}if(t[1]=='hurdle'&&!S.used.h&&P.g&&state=='PLAYING'){S.used.h=1;S.cx=t[0];S.ctl=S.tl;S.mins.forEach(m=>{if(!m.dead&&M.abs(m.x-P.x)<450){em(m.x,m.y-18,14,'#8a4cff',150,.6,-30,3);m.kill()}});K.l=K.r=K.j=K.f=K.jp=K.s=0;P.vx=0;state='CHOICE'}if(t[1]=='riddle'&&!S.riddle&&state=='PLAYING'){ri=[0,1,2].sort(()=>R()-.5);rw=[];state='RIDDLE'}});
 if(lv.fz){const nph=P.x>lv.fz?1:0;if(nph!==S.ph){S.ph=nph;FX.flash=.5;FX.fc='6,4,16';if(nph&&!S.used.fo){S.used.fo=1;S.t0=S.t;musCue(48);msg('The Ash Road ends. The Dark Forest begins...')}}}
@@ -234,7 +235,7 @@ function fog(){for(let i=0;i<4;i++){const x=((i*330-S.cam*.5+S.t*10*(i%2+1))%140
 function hole(x,y,r){const g=lx.createRadialGradient(x,y,r*.1,x,y,r);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(1,'rgba(0,0,0,0)');lx.fillStyle=g;lx.fillRect(x-r,y-r,r*2,r*2)}
 function dark(){const cx=S.cam;lx.globalCompositeOperation='source-over';lx.clearRect(0,0,W,H);lx.fillStyle=`rgba(6,2,16,${lv.boss&&S.lit>0?.4:S.bar?.94:lv.dark})`;lx.fillRect(0,0,W,H);
 lx.fillStyle='rgba(40,0,70,.35)';S.zones.forEach(z=>{if(z.on)lx.fillRect(z.x-cx,0,z.w,H)});lx.globalCompositeOperation='destination-out';
-hole(P.x+12-cx,P.y+20,easy?170:70+100*pend());lights().forEach(l=>hole(l.x-cx,l.y,l.r));S.fb.forEach(f=>hole(f.x-cx,f.y,95));if(lv.boss&&villageSaved&&S.boss)(lv.av||[250,480,710]).forEach(x=>hole(x-cx,G-20,90));
+hole(P.x+12-cx,P.y+PH/2,easy?170:70+100*pend());lights().forEach(l=>hole(l.x-cx,l.y,l.r));S.fb.forEach(f=>hole(f.x-cx,f.y,95));if(lv.boss&&villageSaved&&S.boss)(lv.av||[250,480,710]).forEach(x=>hole(x-cx,G-20,90));
 if(lv.boss&&S.boss&&S.lit>0)hole(S.boss.x-cx,G-50,160);ctx.drawImage(lc,0,0)}
 function heart(x,y,s,c){ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,y+4*s);ctx.bezierCurveTo(x-9*s,y-4*s,x-10*s,y+7*s,x,y+13*s);ctx.bezierCurveTo(x+10*s,y+7*s,x+9*s,y-4*s,x,y+4*s);ctx.fill()}
 const MN=[[120,400,0,'Forge & Ash Road'],[310,290,LV[0].fz?LV[0].fz/LV[0].w/3:.17,'Dark Forest'],[500,370,1/3,'Sky Battle'],[690,250,2/3,"Valdrik's Castle"],[850,180,1,'Noor']];
@@ -321,7 +322,7 @@ if(state=='HELP')helpUI();
 if(state=='DEAD'){panel('The Embers Fade',failBoss?'Qaher\'s shadow closes in...':easy?'Rise again, blacksmith.':'Noor\'s light flickers...');btns().forEach(button)}
 if(state=='ENDING'){const sec=ending=='secret';ctx.fillStyle='rgba(8,2,16,.72)';ctx.fillRect(0,0,W,H);t_(sec?'SECRET ENDING: Two Flames, One Light':'ENDING: The Flame Burns Again',W/2,90,34,sec?'#7af0ff':'#ffb347','center','italic');
 (sec?['Noor\'s light joins Shams\'s fire and burns the curse away.','Qaher is freed too, a king remembered, not a shadow.']:['Qaher is defeated. Noor is saved.','The pendant blazes: the Flame burns again.']).forEach((l,i)=>t_(l,W/2,150+i*34,21,'#f0e4ff'));
-const q=new Pl(0);q.x=W/2-60;q.y=G-44-90;q.ar=2.3;P=q;ctx.save();ctx.translate(0,90);P.draw();noorA(W/2+34,G,-1,S.t,{pose:'hug',glow:1});ctx.restore();
+const q=new Pl(0);q.x=W/2-60;q.y=G-PH-90;q.ar=2.3;P=q;ctx.save();ctx.translate(0,90);P.draw();noorA(W/2+34,G,-1,S.t,{pose:'hug',glow:1});ctx.restore();
 t_('Ember shards: '+sh.filter(x=>x).length+'/3'+(sh.every(x=>x)?'':'   (find all 3 and save the village for the secret ending)'),W/2,370,18,'#9af6ff');t_(easy?'Easy mode: no pendant timer':'Pendant time left: '+M.ceil(S.tl)+'s',W/2,400,18,'#ffd27a');t_('Village '+(villageSaved?'saved':'lost'),W/2,425,16,'#d8c8ff');btns().forEach(button)}
 const v=ctx.createRadialGradient(W/2,H/2,H*.4,W/2,H/2,H*.9);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.55)');ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
 if(fade.a>0){ctx.fillStyle=`rgba(0,0,0,${fade.a})`;ctx.fillRect(0,0,W,H)}
@@ -404,10 +405,10 @@ const NW=["Noor: 'The ember is warm... I am still here.'","Noor: 'Don't look bac
 function npcs(){if(L==0)elder(lv.mira,G,1,S.t,1)}
 function npcUp(){if(L==0&&!S.used.e&&M.abs(P.x-lv.mira)<110){S.used.e=1;msg("Mira: 'Feed the torches. The dark fears fire.'")}}
 // ===== CHARACTERS =====
-function rehan(x,y,f,t,o){o=o||{};const q=new Pl(0);q.x=x-12;q.y=y-44;q.face=f;q.an=t;q.vx=o.vx||0;q.g=o.air?0:1;q.ar=o.ar;q.cd=o.cd||0;q.draw()}
+function rehan(x,y,f,t,o){o=o||{};const q=new Pl(0);q.x=x-12;q.y=y-PH;q.face=f;q.an=t;q.vx=o.vx||0;q.g=o.air?0:1;q.ar=o.ar;q.cd=o.cd||0;q.draw()}
 function noorA(x,y,f,t,o){o=o||{};ctx.save();ctx.translate(x,y);ctx.scale(f,1);ctx.globalAlpha=o.a==null?1:o.a;const wk=o.walk?M.abs(M.sin(t*9))*2.5:0,p=o.pose;ctx.translate(0,-wk);ctx.rotate(p=='reach'?-.08+M.sin(t*6)*.03:0);
 KW={a:o.walk?1:0,p:t*9,air:0};drawKit(CHARACTERS.noor,-100*NS,-322*NS,NS,t,null);KW.a=0; // Noor: Lyra look from game-characters.html
-ctx.restore();if(o.glow)gl(x+f*3,y-30,26+6*M.sin(t*4),'255,200,110',.7)}
+ctx.restore();if(o.glow)gl(x+f*3,y-44,32+7*M.sin(t*4),'255,200,110',.7)}
 function elder(x,y,f,t,lit){ctx.save();ctx.translate(x,y);ctx.scale(f,1);const b=M.sin(t*2);ctx.fillStyle='#4a3a5a';ctx.beginPath();ctx.moveTo(-12,0);ctx.bezierCurveTo(-18,-24,-14,-38,-4,-42+b);ctx.bezierCurveTo(8,-40,14,-24,13,0);ctx.fill();
 ctx.fillStyle='#d9b08a';ctx.beginPath();ctx.arc(2,-48+b,7.5,0,6.3);ctx.fill();ctx.fillStyle='#e8e8f0';ctx.beginPath();ctx.arc(1,-50+b,8,3.1,6.3);ctx.fill();ctx.beginPath();ctx.moveTo(-6,-48);ctx.quadraticCurveTo(-12,-38,-8,-32);ctx.quadraticCurveTo(-5,-40,-2,-44);ctx.fill();
 limb(-14,-6,-40,.12,3,'#6b4a2a');limb(8,-34,14,2.2,4,'#d9b08a');ctx.save();ctx.translate(22,-28);ctx.rotate(M.sin(t*2.2)*.15);limb(0,-6,6,0,1.5,'#333');pl([[-5,2],[5,2],[7,12],[0,16],[-7,12]],'#2a1a14');ctx.restore();ctx.restore();
@@ -484,11 +485,11 @@ const _click=click;click=function(x,y){if(state=='CINE'){cont();return}_click(x,
 const CHARACTERS={
 shams:{name:'Shams',female:false,beard:true,cape:true,light:'lantern',colors:{skin:'#e0b08a',hair:'#3b2a20',armor:'#6b7585',metal:'#aab4c3',steel:'#dfe6ee',cloth:'#7a2e2e',cape:'#5a1f1f',pants:'#3a3340',accent:'#d4a84a',boot:'#3b2b22',eye:'#2a3a52',lip:'#b5654f'}},
 noor:{name:'Noor',female:true,beard:false,cape:true,light:'orb',colors:{skin:'#f0c4a0',hair:'#7a3a1c',armor:'#3f5f5a',metal:'#c9b27a',steel:'#e8f0f5',cloth:'#2d4a47',cape:'#1f3a3a',pants:'#2b2b36',accent:'#e0b84a',boot:'#4a3326',eye:'#2e7d5b',lip:'#b04a5a'}}};
-const KS=.18,NS=.17; // draw scale: kit units (200x340) -> game pixels
+const KS=.18,NS=.255,FR_ANG=70; // draw scale: kit units (200x340) -> game pixels
 const kitCol=(c,k)=>c.colors[k]||k;
 const kitRgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`};
 // One shape list per character (same data as the kit). g = group tag so a level can hide the sword arm / light arm.
-let KW={a:0,p:0,air:0};
+let KW={a:0,p:0,air:0,r:0};
 function kitParts(c,t){t=t||0;const wl=KW.air?-20:KW.a*M.sin(KW.p)*30,wr=KW.air?16:-wl,RL={rot:[wl,90,166]},RR={rot:[wr,110,166]};const F=c.female,Q=[];let grp='';
 const add=(d,f,o)=>Q.push({d,f,g:grp,...(o||{})});
 const circ=(x,y,r)=>`M${x-r} ${y} a${r} ${r} 0 1 0 ${2*r} 0 a${r} ${r} 0 1 0 ${-2*r} 0Z`;
@@ -563,8 +564,9 @@ return Q}
 // draws a kit character with its feet-box top-left at x,y (kit units * s). skip(group) can hide the sword/light arms.
 function drawKit(c,x,y,s,t,skip){const ga=ctx.globalAlpha;ctx.save();ctx.translate(x,y+M.sin(t*1.6)*1.2*s);ctx.scale(s,s);
 for(const p of kitParts(c,t)){if(skip&&skip(p.g))continue;
-if(p.glow){const gx=p.glow[0],gy=p.glow[1],r=p.glow[2],gc=p.glow[3],a=p.glow[4],g=ctx.createRadialGradient(gx,gy,0,gx,gy,r);g.addColorStop(0,kitRgba(gc,a));g.addColorStop(1,kitRgba(gc,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(gx,gy,r,0,7);ctx.fill();continue}
+if(p.glow){ctx.save();if(KW.r>0&&p.g=='light'){const a=-FR_ANG*KW.r*M.PI/180;ctx.translate(140,88);ctx.rotate(a);ctx.translate(-140,-88);ctx.translate(148,166);ctx.rotate(-a);ctx.translate(-148,-166)}const gx=p.glow[0],gy=p.glow[1],r=p.glow[2],gc=p.glow[3],a=p.glow[4],g=ctx.createRadialGradient(gx,gy,0,gx,gy,r);g.addColorStop(0,kitRgba(gc,a));g.addColorStop(1,kitRgba(gc,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(gx,gy,r,0,7);ctx.fill();ctx.restore();continue}
 ctx.save();ctx.globalAlpha=ga*(p.op==null?1:p.op);
+let _ra=0;if(KW.r>0&&p.g=='light'){_ra=-FR_ANG*KW.r*M.PI/180;ctx.translate(140,88);ctx.rotate(_ra);ctx.translate(-140,-88);if(p.rot||p.glow){ctx.translate(148,166);ctx.rotate(-_ra);ctx.translate(-148,-166)}}
 if(p.rot){ctx.translate(p.rot[1],p.rot[2]);ctx.rotate(p.rot[0]*M.PI/180);ctx.translate(-p.rot[1],-p.rot[2])}
 const path=new Path2D(p.d);
 if(p.f!='none'){ctx.fillStyle=kitCol(c,p.f);ctx.fill(path)}
@@ -630,13 +632,13 @@ SK.z=SK.z.filter(z=>!(z.dead&&z.dt>=.9));
 for(const a of SK.ar){a.age+=dt;const px=a.x,py=a.y;a.vy+=C.gravity*dt;a.x+=a.vx*dt;a.y+=a.vy*dt;const n=M.max(1,M.ceil(M.hypot(a.x-px,a.y-py)/8));
 for(let i=1;i<=n&&!a.dead;i++){const x=px+(a.x-px)*i/n,y=py+(a.y-py)*i/n;
 if(a.o=='h'){for(const z of SK.z)if(!z.dead&&z.sp>.5&&x>z.x-z.hw&&x<z.x+z.hw&&y>z.y-z.hh&&y<z.y+4){skHitZ(z,a);break}}
-else if(x>h.x-15&&x<h.x+15&&y>h.y-60&&y<h.y+2)skHitH(a)}
+else if(x>h.x-18&&x<h.x+18&&y>h.y-72&&y<h.y+2)skHitH(a)}
 if(a.x<-80||a.x>W+80||a.y>H+80||a.y<-700||a.age>10)a.dead=1;
 if(!a.dead&&R()<.5)em(a.x,a.y,1,a.o=='h'?'#ffb347':'#8a4cff',20,.3,0,2)}
 SK.ar=SK.ar.filter(a=>!a.dead);
 for(const f of SK.fx){f.l-=dt;f.y-=45*dt}SK.fx=SK.fx.filter(f=>f.l>0);
 // ember shard (keeps the secret ending reachable)
-(lv.shs||[]).forEach(q=>{if(!sh[q[2]]&&M.hypot(h.x-q[0],h.y-30-q[1])<34){sh[q[2]]=1;SFX.shard();FX.flash=.3;FX.fc='120,240,255';em(q[0],q[1],40,'#7af0ff',200,1,0,3);msg('Ember shard found! ('+sh.filter(x=>x).length+'/3)')}});
+(lv.shs||[]).forEach(q=>{if(!sh[q[2]]&&M.hypot(h.x-q[0],h.y-36-q[1])<40){sh[q[2]]=1;SFX.shard();FX.flash=.3;FX.fc='120,240,255';em(q[0],q[1],40,'#7af0ff',200,1,0,3);msg('Ember shard found! ('+sh.filter(x=>x).length+'/3)')}});
 // pendant dims with the hero's health (reuses the pendant ring + music slow-down)
 S.tl=S.max*h.hp/C.heroMaxHealth;
 if(h.hp<=0&&!SK.over){die();return}
@@ -663,7 +665,7 @@ ctx.strokeStyle='#e8dcff';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(t1[0],t1[
 if(arrow){const e=[x+dx*4,y+dy*4];ctx.strokeStyle='#e6cfa0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(nk[0],nk[1]);ctx.lineTo(e[0],e[1]);ctx.stroke();ctx.fillStyle=tip;ctx.beginPath();ctx.moveTo(e[0]+dx*5,e[1]+dy*5);ctx.lineTo(e[0]-dx*2+nx*3,e[1]-dy*2+ny*3);ctx.lineTo(e[0]-dx*2-nx*3,e[1]-dy*2-ny*3);ctx.fill()}
 ctx.restore();return nk}
 function skHeroDraw(){const h=SK.h,a=SK.aim,dx=M.cos(a),dy=M.sin(a),pull=SK.charging?.12+.88*SK.pw:.12;
-skStep(h.x,h.y,76,1);ctx.save();ctx.translate(h.x,h.y);
+skStep(h.x,h.y,76,1);ctx.save();ctx.translate(h.x,h.y);ctx.scale(1.2,1.2);
 drawKit(CHARACTERS.shams,-100*.2,-322*.2,.2,S.t,g=>g=='sword'||g=='light'); // Shams without sword/lantern: he holds a bow instead
 let r=pend();if(!(r>=0))r=1;ctx.save();ctx.globalAlpha*=.4+.6*r;ctx.fillStyle='#ffb347';ctx.shadowColor='#ff8a1f';ctx.shadowBlur=10*r;ctx.beginPath();ctx.arc(0,-42,3,0,6.3);ctx.fill();ctx.restore();
 const bx=6+dx*22,by=-46+dy*22,nk=skBow(bx,by,a,pull,15,'#6b4a2a',1,'#ffb347');
@@ -692,7 +694,7 @@ if(state!='DEAD')skHeroDraw();
 // power bar + short trajectory preview while charging
 if(SK.charging&&state!='DEAD'){const p=SK.pw,a=SK.aim,v=C.maxArrowSpeed*(C.minPower+(1-C.minPower)*p);let px=h.x+6+M.cos(a)*26,py=h.y-46+M.sin(a)*26,vx=M.cos(a)*v,vy=M.sin(a)*v;
 for(let i=0;i<16;i++){vy+=C.gravity*.05;px+=vx*.05;py+=vy*.05;ctx.fillStyle=`rgba(255,226,122,${.8-i*.045})`;ctx.beginPath();ctx.arc(px,py,2.2,0,6.3);ctx.fill()}
-ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(h.x-26,h.y-92,52,8);ctx.fillStyle=p<.5?'#9af08a':p<.85?'#ffd27a':'#ff6a2a';ctx.fillRect(h.x-25,h.y-91,50*p,6);t_(M.round(p*100)+'%',h.x,h.y-97,11,'#ffe9b0')}
+ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(h.x-26,h.y-108,52,8);ctx.fillStyle=p<.5?'#9af08a':p<.85?'#ffd27a':'#ff6a2a';ctx.fillRect(h.x-25,h.y-107,50*p,6);t_(M.round(p*100)+'%',h.x,h.y-97,11,'#ffe9b0')}
 SK.ar.forEach(skArrowDraw);if(SK.um&&state=='PLAYING'&&!SK.over){ctx.strokeStyle='rgba(255,226,122,.75)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(SK.mx,SK.my,8,0,6.3);ctx.moveTo(SK.mx-14,SK.my);ctx.lineTo(SK.mx-4,SK.my);ctx.moveTo(SK.mx+4,SK.my);ctx.lineTo(SK.mx+14,SK.my);ctx.stroke()}
 SK.fx.forEach(f=>{ctx.globalAlpha=M.max(0,f.l/f.m);t_(f.txt,f.x,f.y,20,f.c,'center','bold');ctx.globalAlpha=1});
 ctx.globalCompositeOperation='lighter';ptc.forEach(p=>{ctx.globalAlpha=M.max(0,p.l/p.m);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,6.3);ctx.fill()});ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
