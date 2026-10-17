@@ -1,14 +1,23 @@
-:root{--bg:#f2ece4;--b:clamp(54px,15vmin,78px);--gap:clamp(8px,2.2vmin,18px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--sb:env(safe-area-inset-bottom,0px);--st:env(safe-area-inset-top,0px)}
+:root{--bg:#f2ece4;--b:clamp(50px,13.5vmin,72px);--gap:clamp(10px,2.6vmin,20px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--sb:env(safe-area-inset-bottom,0px);--st:env(safe-area-inset-top,0px)}
 @media(prefers-color-scheme:dark){:root{--bg:#0a0710}}
-html,body{margin:0;width:100%;height:100%;height:100dvh;background:var(--bg);overflow:hidden;touch-action:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{margin:0;width:100%;height:100%;height:100dvh;background:var(--bg);overflow:hidden;touch-action:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;position:fixed;inset:0}
 body{display:flex;align-items:center;justify-content:center}
+body.touch,body.touch html{background:#0a0710}
+html:has(body.touch){background:#0a0710}
 canvas{display:block;border-radius:6px;touch-action:none}
 @media(max-width:1000px),(max-height:560px){canvas{border-radius:0}}
 
 /* touch buttons */
-.tb{position:fixed;bottom:calc(var(--gap) + var(--sb));width:var(--b);height:var(--b);border-radius:50%;border:2px solid #ffb347;background:#2a1a3acc;color:#ffd27a;font:calc(var(--b)*.38) sans-serif;display:none;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none;z-index:5;transition:transform .06s,background .06s}
+.tb{position:fixed;bottom:calc(var(--gap) + var(--sb));width:var(--b);height:var(--b);border-radius:50%;border:2px solid #ffb347b0;background:#2a1a3a8c;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);color:#ffd27a;font:calc(var(--b)*.38) sans-serif;display:none;align-items:center;justify-content:center;opacity:.92;user-select:none;-webkit-user-select:none;touch-action:none;z-index:5;transition:transform .06s,background .06s}
 .tb:active{transform:scale(.92);background:#5a3a7acc}
-body.touch .tb{display:flex}
+body.touch.ctl .tb{display:flex}
+.tb::before{content:'';position:absolute;inset:-12px;border-radius:50%}
+.tb.on{transform:scale(.93);background:#6a4a8ad0;border-color:#ffd27a}
+.tb.tbs.on{transform:scale(.93)}
+/* invisible slide-pad behind the move buttons: slide a thumb left/right (and down to dive) */
+#pad{display:none;position:fixed;left:0;bottom:0;z-index:4;touch-action:none;width:calc(var(--b)*2 + var(--gap)*3 + var(--sl) + 36px);height:calc(var(--b)*2.4 + var(--sb));-webkit-user-select:none}
+body.touch.ctl #pad{display:block}
+body.sky #bs{display:none!important}
 /* movement: left side */
 #bl{left:calc(var(--gap) + var(--sl))}
 #br{left:calc(var(--gap)*2 + var(--b) + var(--sl))}
@@ -17,7 +26,7 @@ body.touch .tb{display:flex}
 #bj{right:calc(var(--gap)*2 + var(--b) + var(--sr))}
 #bs{right:calc(var(--gap) + var(--b)*.5 + var(--gap)*.5 + var(--sr));bottom:calc(var(--gap)*2 + var(--b) + var(--sb))}
 /* pause + music: small, top centre */
-.tbs{width:44px;height:44px;font-size:18px;bottom:auto;top:calc(8px + var(--st))}
+.tbs{width:44px;height:44px;font-size:18px;opacity:.7;bottom:auto;top:calc(8px + var(--st))}
 #bp{left:calc(50% + 6px)}
 #bmap{left:calc(50% + 62px)}
 #bm{left:calc(50% - 50px)}
