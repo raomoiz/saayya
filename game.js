@@ -137,8 +137,8 @@ const SW_ANIM=.3,SW_START=.26,SW_END=.1;let swq=0,swHits=null,swBossHit=0;
 function swing(){P.sw=.32;P.sa=SW_ANIM;P.sface=P.face;swHits=new Set();swBossHit=0;SFX.sword();swHit()}
 function swHit(){if(!P||!swHits)return;const f=P.face,hb={x:f>0?P.x+8:P.x+16-104,y:P.y-14,w:104,h:70};let hit=0;for(const m of S.mins)if(!m.dead&&!swHits.has(m)&&ov(hb,m.b)){swHits.add(m);m.kill();hit=1;em(m.x,m.y-18,8,'#e8f4ff',140,.3,0,2)}const v=S.boss;if(v&&!v.dead&&!swBossHit&&ov(hb,{x:v.x-50,y:G-130,w:100,h:130})){swBossHit=1;if(S.lit>0&&v.iv<=0){v.hit()}else v.chip()}for(const b of S.bolts)if(ov(hb,{x:b.x-17,y:b.y-8,w:34,h:16})){em(b.x,b.y,12,'#e8f4ff',150,.3,0,2);SFX.clink();b.x=-999;hit=1}if(hit)shake=M.max(shake,4)}
 function hurt(){if(P.inv>0||state!='PLAYING')return;P.hp--;P.inv=CFG.inv;shake=12;SFX.hurt();FX.flash=.4;FX.fc='255,40,30';FX.stop=.06;P.vy=-300;em(P.x+12,P.y+20,16,'#ff5a1f',160,.6,60,3);if(P.hp<=0)die()}
-let failWhy='hp';
-function die(){if(state!='PLAYING'||S.end)return;failWhy=(!easy&&!lv.sky&&S.tl<=0)?'time':'hp';state='DEAD';go(()=>{villageSaved=false;sh=[0,0,0];cine('fail',()=>cine('prologue',()=>startStory(0)))});SFX.die();em(P.x+12,P.y+20,40,'#ff8a1f',220,1,40,3)}
+let failWhy='hp',failBoss=false;
+function die(){if(state!='PLAYING'||S.end)return;failWhy=(!easy&&!lv.sky&&S.tl<=0)?'time':'hp';failBoss=!!(lv.boss&&S.boss&&!S.boss.dead);state='DEAD';if(failBoss)go(()=>cine('fail',()=>{respawn(1);musLevel(L)}));SFX.die();em(P.x+12,P.y+20,40,'#ff8a1f',220,1,40,3)}
 function respawn(full){if(lv.sky)skInit();if(S.bar){S.blocks=S.blocks.filter(b=>b!==S.bar);S.bar=null;S.boss=null;S.used.b=0;S.lit=0}P=new Pl(S.cx);S.fb=[];S.bolts=[];S.sp=[];if(full){S.tl=easy?S.max:M.max(S.ctl,40);state='PLAYING'}S.ch=S.hu?M.max(S.torches.filter(t=>!t.lit&&!t.lock&&t.tag).length,0):CFG.charges;P.hp=full?maxHp():P.hp}
 function load(i){L=i;lv=LV[i];const m=a=>({x:a[0],y:a[1],w:a[2],h:a[3]});
 S={plats:lv.P.map(m).concat([{x:-40,y:0,w:40,h:540},{x:lv.w,y:0,w:40,h:540}]),alt:(lv.A||[]).map(m),altOn:0,blocks:(lv.B||[]).map(a=>({...m(a),k:a[4],need:a[5],dead:0})),torches:(lv.T||[]).map(a=>({x:a[0],y:a[1],k:a[2],tag:a[3],lit:0,lock:0})),mins:(lv.mn||[]).map(a=>new Minion(a)),zones:(lv.z||[]).map(a=>({x:a[0],w:a[1],t:a[2],on:1})),fb:[],bolts:[],cam:0,t:0,lit:0,cx:lv.cp[0],hu:0,hd:0,riddle:0,used:{},sl:0,rb:0,msg:null,end:0,
@@ -184,13 +184,13 @@ function answer(k){if(state!='RIDDLE'||rw.includes(k))return;if(k==0){S.riddle=1
 // UI BUTTONS (data) shared by draw and click
 function btns(){const b=(x,y,w,h,t,f,s)=>({x,y,w,h,t,f,s});
 if(state=='TITLE')return[b(370,330,220,56,'Start',()=>go(()=>cine('prologue',()=>startStory(0)))),b(370,400,220,44,'Easy mode: '+(easy?'ON':'OFF'),()=>easy=!easy)];
-if(state=='DEAD')return[];
+if(state=='DEAD')return failBoss?[]:[b(380,330,200,56,'Retry',()=>respawn(1))];
 if(state=='ENDING')return[b(380,440,200,50,'Play again',()=>go(()=>{state='TITLE';sh=[0,0,0];villageSaved=false;lv=LV[0];S={cam:0,t:0,torches:[],mins:[],blocks:[],plats:[],alt:[],zones:[],fb:[],bolts:[],ch:6}}))];
 if(state=='CHOICE')return[b(60,250,400,170,'A: RUSH ON',()=>choose(false),['Spend 3 flames on the gate torches.','Gate opens. The village falls into','permanent darkness. No time lost,','fewer light for the final fight.']),b(500,250,400,170,'B: SAVE THE VILLAGE',()=>choose(true),['Spend 3 flames on the lanterns.','Villagers saved. The gate stays shut:','a long detour costs ~40s of pendant','time. Allies will light the last fight.'])];
 if(state=='RIDDLE')return ri.map((k,i)=>b(280,250+i*70,400,54,(i+1)+'.  '+['A clock','A king','A tower'][k],()=>answer(k),rw.includes(k)?1:0));return[]}
 function click(x,y){const r=cv.getBoundingClientRect(),X=(x-r.left)*W/r.width,Y=(y-r.top)*H/r.height;for(const b of btns())if(X>b.x&&X<b.x+b.w&&Y>b.y&&Y<b.y+b.h){SFX.ui();return b.f()}if(state=='STORY')nextLine()}
 function nextLine(){if(si<lv.story.length&&S.t-(st[si]||0)<lv.story[si].length/cps()){st[si]=-99;return}if(++si>=lv.story.length+1){go(()=>{state='PLAYING';ptc=[]})}else{st[si]=S.t}}
-function cont(){if(state=='TITLE')go(()=>cine('prologue',()=>startStory(0)));else if(state=='STORY')nextLine();else if(state=='PAUSED'||state=='MAP')state='PLAYING'}
+function cont(){if(state=='TITLE')go(()=>cine('prologue',()=>startStory(0)));else if(state=='STORY')nextLine();else if(state=='DEAD'){if(!failBoss)respawn(1)}else if(state=='PAUSED'||state=='MAP')state='PLAYING'}
 // RENDER
 function t_(s,x,y,sz,c,al,f){ctx.font=(f||'')+' '+sz+'px Georgia,serif';ctx.fillStyle=c;ctx.textAlign=al||'center';ctx.fillText(s,x,y)}
 function bg(){if(lv.sky){skBg();return}const th=lv.th,c=PAL[th];let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,c[0]);g.addColorStop(.65,c[1]);g.addColorStop(1,c[2]);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
@@ -282,7 +282,7 @@ if(state=='CHOICE'){panel('The Lantern Keeper\'s Choice','Emberfall: shadows swa
 if(state=='RIDDLE'){panel('The Gate Speaks','"I have hands but cannot clap."  (wrong answer: -10s)   Click or press 1 / 2 / 3');btns().forEach(button)}
 if(state=='PAUSED'){panel('Paused','P / Esc / Enter / tap to resume   |   M music   |   Tab map')}
 if(state=='MAP')mapUI();
-if(state=='DEAD'){panel('The Embers Fade','Noor\'s light flickers...');btns().forEach(button)}
+if(state=='DEAD'){panel('The Embers Fade',failBoss?'Qaher\'s shadow closes in...':easy?'Rise again, blacksmith.':'Noor\'s light flickers...');btns().forEach(button)}
 if(state=='ENDING'){const sec=ending=='secret';ctx.fillStyle='rgba(8,2,16,.72)';ctx.fillRect(0,0,W,H);t_(sec?'SECRET ENDING: Two Flames, One Light':'ENDING: The Flame Burns Again',W/2,90,34,sec?'#7af0ff':'#ffb347','center','italic');
 (sec?['Noor\'s light joins Shams\'s fire and burns the curse away.','Qaher is freed too, a king remembered, not a shadow.']:['Qaher is defeated. Noor is saved.','The pendant blazes: the Flame burns again.']).forEach((l,i)=>t_(l,W/2,150+i*34,21,'#f0e4ff'));
 const q=new Pl(0);q.x=W/2-60;q.y=G-44-90;q.ar=2.3;P=q;ctx.save();ctx.translate(0,90);P.draw();noorA(W/2+34,G,-1,S.t,{pose:'hug',glow:1});ctx.restore();
@@ -421,7 +421,7 @@ rehan(rx,455,1,t,ro);noorA(nx,455,-1,t,{walk:t>3&&t<15,pose:t>=15?'hug':'idle',a
 if(t>=15){const k=E(15,17,t);gl(rx+3,425,60+30*M.sin(t*3)+k*120,'255,200,100',.5+.4*k);ctx.save();ctx.globalCompositeOperation='lighter';for(let i=0;i<3;i++){const r=((t-15)*120+i*80)%240;ctx.strokeStyle=`rgba(255,210,120,${1-r/240})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(rx+30,430,r,0,6.3);ctx.stroke()}ctx.restore()}
 if(ending=='secret'&&t>20)drawVal(LP(880,960,E(23,28,t)),455,t,.9*(1-E(24,28,t)),1,.9)}
 const CN={prologue:{d:21,s:sPro,cap:()=>[[.5,4.5,"Night at the forge. Shams hammers by firelight."],[5,8.5,"Noor: \"Keep this ember close. It glows while I live.\""],[9,12,"But the Shadow King had come for her."],[12.5,16,"Noor: \"Shams... find me!\""],[17.5,20.8,"Shams: \"While this ember burns, I will not stop.\""]]},
-fail:{d:16,s:sFail,cap:()=>[[.5,4,failWhy=='time'?'The pendant burns to its last spark. The hour is gone.':'The Shadow King\'s blow lands. Shams falls.'],[4.5,8,'Noor: "Shams... the ember... is going out..."'],[8.5,11.5,'The pendant that glowed while she lived goes dark.'],[12,15.5,'Qaher\'s shadow swallows the last hour. But the forge-fire remembers...']]},
+fail:{d:16,s:sFail,cap:()=>[[.5,4,failWhy=='time'?'The pendant burns to its last spark. The hour is gone.':'The Shadow King\'s blow lands. Shams falls.'],[4.5,8,'Noor: "Shams... the ember... is going out..."'],[8.5,11.5,'The pendant that glowed while she lived goes dark.'],[12,15.5,'Qaher\'s shadow swallows the hour. But the forge-fire remembers... Rise again.']]},
 elder:{d:13,s:sEld,cap:()=>[[.5,3,"Beyond the Ash Road, an old lantern-keeper waits."],[3.5,7,"Mira: \"The forest drinks light, blacksmith. Feed the torches.\""],[7.5,10.5,"Mira: \"And when you must choose, remember: lanterns are lives.\""],[11,12.8,"Shams nods and walks into the dark."]]},
 burn:{d:11,s:sBurn,cap:()=>ending=='secret'?[[.5,4,"Qaher falls. Noor's light stirs in the embers."],[4.5,8,"Her light and Shams's fire burn the curse away. Qaher is free."],[8.5,10.8,"The castle of shadows burns to ash."]]:[[.5,4,"Qaher falls. His shadow breaks apart like ash."],[4.5,8,"The castle's dark halls collapse into flame."],[8.5,10.8,"The Shadow King's castle burns."]]},
 reunion:{d:29,s:sRe,cap:()=>[[3,7,"Out of the smoke... a light he knows by heart."],[8,11.5,"Shams: \"Noor?!\""],[12,15.5,"The ember pendant blazes gold."],[16,21,"Noor: \"You never stopped.\"   Shams: \"I never could.\""],[21.5,28.5,ending=='secret'?"Dawn rises for them both, and for a king set free.":"Dawn rises over the ashes. The Flame burns again."]]}};
