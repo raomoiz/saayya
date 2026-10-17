@@ -245,11 +245,12 @@ const MN=[[120,400,0,'Forge & Ash Road'],[310,290,LV[0].fz?LV[0].fz/LV[0].w/3:.1
 const MC=[0,[170,300],[400,285],[590,380],[790,290]];let MP=null;
 function mapPts(){if(MP)return MP;MP=[];for(let i=1;i<MN.length;i++){const a=MN[i-1],b=MN[i],c=MC[i];for(let j=0;j<=24;j++){if(i>1&&!j)continue;const k=j/24,u=1-k;MP.push({x:u*u*a[0]+2*u*k*c[0]+k*k*b[0],y:u*u*a[1]+2*u*k*c[1]+k*k*b[1],p:LP(a[2],b[2],k)})}}return MP}
 let helpSeen=false,helpFrom='TITLE';
-function startGame(){if(!helpSeen){helpSeen=true;openHelp('start')}else go(()=>cine('prologue',()=>startStory(0)))}
-function openHelp(f){helpFrom=f;K.l=K.r=K.j=K.f=K.jp=K.s=K.dn=0;state='HELP'}
-function closeHelp(){if(state!='HELP')return;if(helpFrom=='start')go(()=>cine('prologue',()=>startStory(0)));else state=helpFrom}
+function startGame(){reqFS();if(!helpSeen){helpSeen=true;openHelp('start')}else go(()=>cine('prologue',()=>startStory(0)))}
+let helpClosing=false;
+function openHelp(f){helpClosing=false;helpFrom=f;K.l=K.r=K.j=K.f=K.jp=K.s=K.dn=0;state='HELP'}
+function closeHelp(){if(state!='HELP'||helpClosing)return;helpClosing=true;{const h=document.getElementById('help');if(h)h.style.display='none'}if(helpFrom=='start')go(()=>cine('prologue',()=>startStory(0)));else{state=helpFrom;helpClosing=false}}
 function wrapText(l,w,f){ctx.font=f;const ws=l.split(' '),o=[];let c='';for(const x of ws){const n=c?c+' '+x:x;if(ctx.measureText(n).width>w&&c){o.push(c);c=x}else c=n}o.push(c);return o}
-function helpUI(){ctx.fillStyle='rgba(6,2,14,.94)';ctx.fillRect(0,0,W,H);t_('How to Play',W/2,56,38,'#ffb347','center','italic');
+function helpUI(){ctx.fillStyle='rgba(6,2,14,.97)';ctx.fillRect(0,0,W,H);return;ctx.fillStyle='rgba(6,2,14,.94)';ctx.fillRect(0,0,W,H);t_('How to Play',W/2,56,38,'#ffb347','center','italic');
 ctx.fillStyle='#1a1124';ctx.strokeStyle='#6a4a8a';ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(40,76,880,380,16);ctx.fill();ctx.stroke();
 ctx.strokeStyle='#4a3a5a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(474,100);ctx.lineTo(474,432);ctx.stroke();
 t_('CONTROLS',250,112,18,'#9af6ff');t_('WHAT TO DO',690,112,18,'#9af6ff');
@@ -294,9 +295,9 @@ ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(820,66,120,5);ctx.fillStyle='#ffb347
 {const tt=S.t-(S.t0||0),hh=S.ph?lv.hint2:lv.hint;if(tt<3.5){ctx.globalAlpha=M.min(1,3.5-tt);t_(S.ph?lv.n2:lv.n,W/2,110,34,'#ffd27a','center','italic');ctx.globalAlpha=1}
 if(tt<7.5&&hh){const i=M.min(2,tt/2.5|0);t_(hh[i],W/2,H-30,18,'#fff','center')}}
 if(S.msg){ctx.globalAlpha=M.min(1,S.msg.l);t_(S.msg.t,W/2,160,20,'#ffe9b0','center');ctx.globalAlpha=1}
-if(S.boss&&!S.boss.dead){const b=S.boss,bw=360,x0=W/2-bw/2,sg=bw/b.mx;t_('QAHER, THE SHADOW KING',W/2,24,15,'#d9a0ff','center','italic');ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x0-2,32,bw+4,14);for(let i=0;i<b.mx;i++){ctx.fillStyle='#2a1a3a';ctx.fillRect(x0+i*sg+1,34,sg-2,10);const f=cl(b.hp-i,0,1);if(f>0){ctx.fillStyle=b.ph==3?'#ff4a6a':'#9a50ff';ctx.fillRect(x0+i*sg+1,34,(sg-2)*f,10)}}
+if(S.boss&&!S.boss.dead){ctx.save();if(document.body.classList.contains('touch'))ctx.translate(0,48);const b=S.boss,bw=360,x0=W/2-bw/2,sg=bw/b.mx;t_('QAHER, THE SHADOW KING',W/2,24,15,'#d9a0ff','center','italic');ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x0-2,32,bw+4,14);for(let i=0;i<b.mx;i++){ctx.fillStyle='#2a1a3a';ctx.fillRect(x0+i*sg+1,34,sg-2,10);const f=cl(b.hp-i,0,1);if(f>0){ctx.fillStyle=b.ph==3?'#ff4a6a':'#9a50ff';ctx.fillRect(x0+i*sg+1,34,(sg-2)*f,10)}}
 ctx.fillStyle='rgba(255,210,120,.9)';ctx.fillRect(x0,49,bw*M.min(1,S.lit/(villageSaved?CFG.lightWinSaved:CFG.lightWin)),3);
-if(b.iv>0){ctx.globalAlpha=M.min(1,b.iv);t_('QAHER, THE SHADOW KING',W/2,210,40,'#d9a0ff','center','bold italic');ctx.globalAlpha=1}}}
+if(b.iv>0){ctx.globalAlpha=M.min(1,b.iv);t_('QAHER, THE SHADOW KING',W/2,210,40,'#d9a0ff','center','bold italic');ctx.globalAlpha=1}ctx.restore()}}
 function storyUI(){const t=S.t,a=[1,.55,.3][L];ctx.fillStyle='rgba(8,2,16,.5)';ctx.fillRect(0,0,W,H);
 ctx.fillStyle='#0b0612';ctx.beginPath();ctx.moveTo(0,H);ctx.lineTo(0,480);ctx.quadraticCurveTo(300,454,W,478);ctx.lineTo(W,H);ctx.fill();
 ctx.save();ctx.globalAlpha=.92;drawKit(CHARACTERS.shams,130,478-322*.55,.55,t,null);ctx.restore();
@@ -315,7 +316,7 @@ ctx.save();const sk=RM?.2:1;ctx.translate(shake?(R()-.5)*shake*sk:0,shake?(R()-.
 if(state=='TITLE'||state=='STORY'||state=='ENDING'||(state=='HELP'&&helpFrom!='PAUSED')){ctx.restore();ctx.globalCompositeOperation='lighter';ptc.forEach(p=>{ctx.globalAlpha=M.max(0,p.l/p.m);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,6.3);ctx.fill()});ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
 else if(lv.sky){skDraw();ctx.restore()}else{world();ctx.restore();fog();dark()}ctx.restore();
 if(state=='DEAD'||state=='CHOICE'||state=='RIDDLE')hud();
-if(state=='TITLE'){panel('Ashes of the Last Hour','Shams chases the Shadow King. Noor\'s pendant is fading.');btns().forEach(button);rehan(210,470,1,S.t,{});noorA(750,470,-1,S.t,{glow:1});gl(480,440,40+8*M.sin(S.t*3),'255,190,90',.6);t_('Enter / Space: begin   |   Arrows or WASD + Space,  J / Right-click: fire   F / Click / Shift: sword   |   M: music   P: pause',W/2,H-24,14,'#9a8ab8');P=P||new Pl(0)}
+if(state=='TITLE'){panel('Ashes of the Last Hour','Shams chases the Shadow King. Noor\'s pendant is fading.');btns().forEach(button);rehan(210,470,1,S.t,{});noorA(750,470,-1,S.t,{glow:1});gl(480,440,40+8*M.sin(S.t*3),'255,190,90',.6);t_(document.body.classList.contains('touch')?'Tap Start   |   Left pad: move   |   ⤒ jump   |   🔥 fire   |   ⚔ sword':'Enter / Space: begin   |   Arrows or WASD + Space,  J / Right-click: fire   F / Click / Shift: sword   |   M: music   P: pause',W/2,H-24,14,'#9a8ab8');P=P||new Pl(0)}
 if(state=='STORY')storyUI();
 if(state=='CHOICE'){panel('The Lantern Keeper\'s Choice','Emberfall: shadows swallowed the lanterns. You have exactly 3 flames and no brazier.');btns().forEach(button)}
 if(state=='RIDDLE'){panel('The Gate Speaks','"I have hands but cannot clap."  (wrong answer: -10s)   Click or press 1 / 2 / 3');btns().forEach(button)}
@@ -351,8 +352,26 @@ const upd=e=>{const a=bl.getBoundingClientRect(),c=br.getBoundingClientRect(),cx
 pad.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();pid=e.pointerId;sy=e.clientY;try{pad.setPointerCapture(e.pointerId)}catch(_){}upd(e)});
 pad.addEventListener('pointermove',e=>{if(e.pointerId!==pid)return;if(e.clientY<sy)sy=e.clientY;upd(e)});
 const end=e=>{if(e.pointerId!==pid)return;pid=null;set(0,0,0)};['pointerup','pointercancel','lostpointercapture'].forEach(n=>pad.addEventListener(n,end))}
+
+// Level 2 floating joystick: drag any direction to float (left/right/up/down + diagonals)
+{const jy=document.getElementById('joy'),kn=jy.firstElementChild;let pid=null;
+const set=(x,y)=>{const r=jy.getBoundingClientRect(),R=r.width/2,dx=x-(r.left+R),dy=y-(r.top+R),d=Math.hypot(dx,dy)||1,k=Math.min(1,d/R),nx=dx/d*k,ny=dy/d*k;K.l=nx<-.3?1:0;K.r=nx>.3?1:0;SKK.up=ny<-.3?1:0;SKK.dn=ny>.3?1:0;kn.style.transform=`translate(${nx*R*.5}px,${ny*R*.5}px)`};
+const end=e=>{if(e&&e.pointerId!==pid)return;pid=null;K.l=K.r=0;SKK.up=0;SKK.dn=0;kn.style.transform=''};
+window.joyEnd=end;
+jy.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();pid=e.pointerId;try{jy.setPointerCapture(pid)}catch(_){}set(e.clientX,e.clientY)});
+jy.addEventListener('pointermove',e=>{if(e.pointerId===pid)set(e.clientX,e.clientY)});
+['pointerup','pointercancel','lostpointercapture'].forEach(n=>jy.addEventListener(n,end))}
+{const ok=document.getElementById('hok');ok.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();closeHelp()});const bh=document.getElementById('bh');bh.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(state=='PLAYING'||state=='PAUSED'||state=='MAP')openHelp('PAUSED')})}
 // show touch controls only while actually playing; hide sword on the sky level
-let ctlV=-1,skyV=-1;function ctlSync(){const v=(state=='PLAYING'||state=='PAUSED'||state=='MAP'||state=='DEAD')?1:0;if(v!==ctlV){ctlV=v;document.body.classList.toggle('ctl',!!v);if(!v){K.l=K.r=K.dn=0;SKK.dn=0;document.querySelectorAll('.tb.on').forEach(e=>e.classList.remove('on'))}}const sk=lv&&lv.sky?1:0;if(sk!==skyV){skyV=sk;document.body.classList.toggle('sky',!!sk)}}
+let ctlV=-1,skyV=-1;
+function helpFill(){const T=document.body.classList.contains('touch');
+const rows=T?[['Move','Slide the left pad (◀ ▶)'],['Jump','⤒ button (hold = higher)'],['Fireball','🔥 button'],['Sword','⚔ button'],['Dive','Slide down on the pad in the air'],['Down-slash','Slide down + ⚔ in the air'],['Level 2 flight','Joystick floats you any direction'],['Aim &amp; shoot','Touch the screen to aim, hold to charge'],['Menus','🗺 map  ❚❚ pause  ♪ music  ? help']]
+:[['Move','Arrows / A D'],['Jump','Space / W / Up (hold = higher)'],['Fireball','J / Right-click'],['Sword','F / K / Shift / Left-click'],['Dive','Hold S / Down in the air'],['Down-slash','Hold S / Down + Sword in the air'],['Level 2 flight','W A S D / Arrows float, Q E or mouse aims'],['Shoot','Space / J / Click (hold to charge)'],['Menus','Tab map  P/Esc pause  M music  H help']];
+document.getElementById('hc').innerHTML=rows.map(r=>`<div class=r><b>${r[0]}</b><span>${r[1]}</span></div>`).join('');
+document.getElementById('hw').innerHTML=["Reach the end of each chapter before Noor's pendant (top right) burns out. Checkpoints keep your place.","Fire lights the dark, burns webs and barricades and lights torches. Stand near a brazier to refill your flames.","Shadows flee from light. Burn them or strike with your sword. Hearts (top left) are your lives.",T?"Chapter II: float with the joystick, touch the screen to aim, hold to charge, then release to shoot.":"Chapter II: float with W A S D, aim with the mouse, hold Space, J or click to charge, then release to shoot.","Final fight: Qaher can only be hurt while the room is lit. Throw fire, then hit him. Dodge his bolts."].map(x=>`<p>${x}</p>`).join('')}
+function helpSync(){const h=document.getElementById('help');if(!h)return;if(state!='HELP')helpClosing=false;const on=state=='HELP'&&!helpClosing;if(on&&h.style.display!='flex'){helpFill();h.style.display='flex'}else if(!on&&h.style.display=='flex')h.style.display='none'}
+function reqFS(){if(!document.body.classList.contains('touch'))return;try{const d=document.documentElement,f=d.requestFullscreen||d.webkitRequestFullscreen;if(f&&!document.fullscreenElement)f.call(d).catch(()=>{})}catch(_){}try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}
+function ctlSync(){helpSync();const v=(state=='PLAYING'||state=='PAUSED'||state=='MAP'||state=='DEAD')?1:0;if(v!==ctlV){ctlV=v;document.body.classList.toggle('ctl',!!v);if(!v){K.l=K.r=K.dn=0;SKK.dn=0;SKK.up=0;if(window.joyEnd)joyEnd();document.querySelectorAll('.tb.on').forEach(e=>e.classList.remove('on'))}}const sk=lv&&lv.sky?1:0;if(sk!==skyV){skyV=sk;document.body.classList.toggle('sky',!!sk);K.l=K.r=K.dn=0;SKK.dn=0;SKK.up=0;if(window.joyEnd)joyEnd()}}
 {const _render=render;render=function(){_render.apply(this,arguments);ctlSync()}}
 // keep the screen awake while playing on phones
 let wl=null;function keepAwake(){try{if(navigator.wakeLock&&!wl)navigator.wakeLock.request('screen').then(l=>{wl=l;l.addEventListener('release',()=>{wl=null})}).catch(()=>{})}catch(_){}}
@@ -360,7 +379,11 @@ addEventListener('pointerdown',e=>{if(e.pointerType=='touch')keepAwake()});docum
 // haptics
 {const _hurt=hurt;hurt=function(){const h=P&&P.hp;_hurt.apply(this,arguments);if(P&&P.hp<h&&navigator.vibrate&&document.body.classList.contains('touch'))try{navigator.vibrate([35,25,35])}catch(_){}}}
 
-if('ontouchstart'in window||navigator.maxTouchPoints>0)document.body.classList.add('touch');
+// input mode: touch UI only while the player is actually using touch; keyboard / mouse hides it again (laptops, touch-screen laptops, tablets with keyboards)
+{const b=document.body,setT=on=>{if(b.classList.contains('touch')===on)return;b.classList.toggle('touch',on);if(!on){K.l=K.r=K.dn=0;SKK.up=0;SKK.dn=0;if(window.joyEnd)joyEnd();document.querySelectorAll('.tb.on').forEach(e=>e.classList.remove('on'))}};
+if(window.matchMedia&&matchMedia('(pointer:coarse)').matches)b.classList.add('touch');
+addEventListener('pointerdown',e=>{if(e.pointerType=='touch'||e.pointerType=='pen')setT(true);else if(e.pointerType=='mouse')setT(false)},true);
+addEventListener('keydown',e=>{if(!e.repeat&&e.code!='Tab')setT(false)},true)}
 function rs(){const vw=(window.visualViewport&&visualViewport.width)||innerWidth,vh=(window.visualViewport&&visualViewport.height)||innerHeight,s=M.min(vw/W,vh/H),d=M.min(1.5,devicePixelRatio||1)*QS,n=M.round(W*s*d);cv.style.width=W*s+'px';cv.style.height=H*s+'px';if(cv.width!=n){cv.width=n;cv.height=M.round(H*s*d)}}addEventListener('resize',rs);addEventListener('orientationchange',()=>setTimeout(rs,200));if(window.visualViewport)visualViewport.addEventListener('resize',rs);rs();
 document.addEventListener('contextmenu',e=>e.preventDefault());addEventListener('pointerup',e=>{if(e.pointerType=='mouse'&&e.button==2&&!lv.sky)K.f=0});
 const portraitMQ=matchMedia('(orientation: portrait) and (pointer: coarse)');(portraitMQ.addEventListener?portraitMQ.addEventListener.bind(portraitMQ,'change'):portraitMQ.addListener.bind(portraitMQ))(()=>{if(portraitMQ.matches)away();setTimeout(rs,100)});
