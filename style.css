@@ -19,6 +19,7 @@ body.touch .tb{display:flex}
 /* pause + music: small, top centre */
 .tbs{width:44px;height:44px;font-size:18px;bottom:auto;top:calc(8px + var(--st))}
 #bp{left:calc(50% + 6px)}
+#bmap{left:calc(50% + 62px)}
 #bm{left:calc(50% - 50px)}
 
 /* rotate-your-phone notice (phones in portrait only) */
